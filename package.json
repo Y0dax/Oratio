@@ -35,7 +35,7 @@
   },
   "build": {
     "productName": "Oratio",
-    "appId": "Oratio",
+    "appId": "com.oratio.app",
     "files": [
       "dist/",
       "node_modules/",
@@ -46,6 +46,7 @@
     ],
     "afterSign": ".erb/scripts/Notarize.js",
     "mac": {
+      "category": "public.app-category.utilities",
       "target": [
         "dmg"
       ],
