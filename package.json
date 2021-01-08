@@ -1,6 +1,6 @@
 {
   "name": "oratio-electron",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "productName": "Oratio",
   "description": "An electron application to display text input in a window for OBS capture",
   "scripts": {
