@@ -35,5 +35,6 @@ jobs:
           # CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           # This is used for uploading release assets to github
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: electron-builder
         run: |
-          yarn postinstall && yarn build && yarn electron-builder --publish always --win --linux
+          yarn postinstall && yarn build && yarn electron-builder --publish always --win
