@@ -1,3 +1,5 @@
+![banner](./assets/OratioBanner.png)
+
 # Welcome to Project Oratio Electron Application
 
 This project uses React with Electron and [Electron Builder](https://github.com/electron-userland/electron-builder)
