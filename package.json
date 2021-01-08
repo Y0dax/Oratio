@@ -46,6 +46,12 @@
         "nsis"
       ]
     },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development"
+    },
     "directories": {
       "app": "src",
       "buildResources": "assets",
