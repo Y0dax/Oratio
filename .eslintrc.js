@@ -1,9 +1,18 @@
 module.exports = {
-  extends: 'erb',
+  extends: ['erb', 'prettier'],
   rules: {
     // A temporary hack related to IDE not resolving correct package.json
     'import/no-extraneous-dependencies': 'off',
+    'prettier/prettier': 'error',
+    'max-len': ['warn', { code: 200 }],
+    // 'max-len': [
+    //   'error',
+    //   {
+    //     "code": 400,
+    //   },
+    // ],
   },
+  plugins: ['prettier'],
   parserOptions: {
     ecmaVersion: 2020,
     sourceType: 'module',
