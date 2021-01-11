@@ -77,13 +77,30 @@ const handleOpenObs = async () => {
       // transparent: true,
       webPreferences: {
         nodeIntegration: true,
-        devTools: false,
+        devTools: true,
       },
     });
     win.loadURL(`file://${__dirname}/index.html#/obs`);
+    win.webContents.on('did-finish-load', () => {
+      if (win !== undefined) {
+        win.webContents.send('speech', 'Hello second window!');
+      }
+    });
     win.on('closed', () => {
       win = undefined;
     });
+  }
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const handleSpeechSendClicked = async (event: any) => {
+  event.preventDefault();
+  const { speech } = event.currentTarget.elements;
+  // eslint-disable-next-line no-console
+  console.log(speech.value);
+  if (win !== undefined) {
+    win.webContents.send('speech', speech.value);
+    speech.value = '';
   }
 };
 
@@ -95,15 +112,20 @@ function InputDisplay() {
     <MuiThemeProvider theme={theme}>
       <div className={classes.root}>
         <div className={classes.content}>
-          <form noValidate autoComplete="off">
+          <form
+            noValidate
+            autoComplete="off"
+            onSubmit={handleSpeechSendClicked}
+          >
             <Grid container direction="row" spacing={3}>
               <Grid item xs={12}>
                 <TextField
+                  name="speech"
                   id="speech-input"
                   label="Speech"
                   variant="outlined"
                   fullWidth
-                  multiline
+                  autoFocus
                 />
               </Grid>
               <Grid container item xs={12} justify="flex-end">
@@ -112,6 +134,8 @@ function InputDisplay() {
                   variant="contained"
                   color="primary"
                   className={classes.button}
+                  type="submit"
+                  // disabled
                 >
                   Send <SendIcon className={classes.send} />
                 </Button>
@@ -143,13 +167,20 @@ function InputDisplay() {
   );
 }
 
-export default function App() {
-  return (
-    <Router>
-      <Switch>
-        <Route path="/home" component={InputDisplay} />
-        <Route path="/obs" component={OBS} />
-      </Switch>
-    </Router>
-  );
+export default class App extends React.Component {
+  constructor(props: never) {
+    super(props);
+    this.state = {};
+  }
+
+  render() {
+    return (
+      <Router>
+        <Switch>
+          <Route path="/home" component={InputDisplay} />
+          <Route path="/obs" component={OBS} />
+        </Switch>
+      </Router>
+    );
+  }
 }

@@ -95,7 +95,10 @@ const createWindow = async () => {
   });
 
   mainWindow.on('closed', () => {
-    mainWindow = null;
+    // mainWindow = null;
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
   });
 
   const menuBuilder = new MenuBuilder(mainWindow);
