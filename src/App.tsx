@@ -81,11 +81,7 @@ const handleOpenObs = async () => {
       },
     });
     win.loadURL(`file://${__dirname}/index.html#/obs`);
-    win.webContents.on('did-finish-load', () => {
-      if (win !== undefined) {
-        win.webContents.send('speech', 'Hello second window!');
-      }
-    });
+
     win.on('closed', () => {
       win = undefined;
     });
