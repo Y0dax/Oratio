@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Switch, Route } from 'react-router-dom';
+import { HashRouter as Router, Switch, Route, Link } from 'react-router-dom';
 import Grid from '@material-ui/core/Grid';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
@@ -13,6 +13,7 @@ import SendIcon from '@material-ui/icons/Send';
 import MicOffIcon from '@material-ui/icons/MicOff';
 import { BrowserWindow, remote } from 'electron';
 import OBS from './components/OBS';
+import Preferences from './components/Preferences';
 
 // Or Create your Own theme:
 const theme = createMuiTheme({
@@ -156,6 +157,7 @@ function InputDisplay() {
                 </Button>
               </Grid>
             </Grid>
+            <Link to="/preferences">Preferences</Link>
           </div>
         </div>
       </div>
@@ -175,6 +177,7 @@ export default class App extends React.Component {
         <Switch>
           <Route path="/home" component={InputDisplay} />
           <Route path="/obs" component={OBS} />
+          <Route path="/preferences" component={Preferences} />
         </Switch>
       </Router>
     );
