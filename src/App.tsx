@@ -78,7 +78,7 @@ const handleOpenObs = async () => {
       webPreferences: {
         nodeIntegration: true,
         devTools: false,
-        offscreen: true,
+        // offscreen: true,
       },
     });
     win.loadURL(`file://${__dirname}/index.html#/obs`);
