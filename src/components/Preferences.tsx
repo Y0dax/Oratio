@@ -62,7 +62,7 @@ export default function Preferences() {
   const [sound, setSound] = React.useState('');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleVolumeChange = (event: any, newValue: number | number[]) => {
+  const handleVolumeChange = (_event: any, newValue: number | number[]) => {
     setVolume(newValue as number);
   };
 

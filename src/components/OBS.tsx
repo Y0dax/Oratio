@@ -12,6 +12,13 @@ const useStyles = makeStyles(() =>
       height: '100vh',
       // padding: theme.spacing(4),
     },
+    titlebar: {
+      position: 'absolute',
+      width: '100%',
+      top: 0,
+      '-webkit-app-region': 'drag',
+      height: '35px',
+    },
     text: {
       color: 'white',
       fontSize: '3rem',
@@ -29,7 +36,7 @@ export default function OBS() {
   const speechDisplay: any = useRef<HTMLSpanElement>(null);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ipc.on('speech', (event: any, message: any) => {
+  ipc.on('speech', (_event: any, message: any) => {
     // eslint-disable-next-line no-console
     console.log(message);
     const speed = 100;
@@ -54,6 +61,8 @@ export default function OBS() {
   const classes = useStyles();
   return (
     <div className={classes.root}>
+      <title>Oratio - OBS</title>
+      <div className={classes.titlebar} />
       <div className={classes.text}>
         <SpeechDisplay ref={speechDisplay} />
       </div>

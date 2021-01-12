@@ -69,16 +69,16 @@ const handleOpenObs = async () => {
   // const win: BrowserWindow = new remote.BrowserWindow({ .. })
   if (win === undefined) {
     win = new remote.BrowserWindow({
-      backgroundColor: 'blue',
+      // backgroundColor: 'blue',
       height: 600,
       width: 800,
-      frame: false,
       title: 'Oratio OBS Display',
       // focusable: false,
       // transparent: true,
       webPreferences: {
         nodeIntegration: true,
-        devTools: true,
+        devTools: false,
+        offscreen: true,
       },
     });
     win.loadURL(`file://${__dirname}/index.html#/obs`);
