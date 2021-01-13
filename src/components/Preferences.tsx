@@ -16,7 +16,7 @@ import {
 } from '@material-ui/core';
 import { VolumeDown, VolumeUp } from '@material-ui/icons';
 import { Link } from 'react-router-dom';
-import getTheme from './theme';
+import getTheme from './Theme';
 
 const theme = getTheme();
 const useStyles = makeStyles(() =>
