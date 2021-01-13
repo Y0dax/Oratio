@@ -3,7 +3,6 @@ import React from 'react';
 import {
   makeStyles,
   createStyles,
-  createMuiTheme,
   MuiThemeProvider,
 } from '@material-ui/core/styles';
 import {
@@ -17,27 +16,14 @@ import {
 } from '@material-ui/core';
 import { VolumeDown, VolumeUp } from '@material-ui/icons';
 import { Link } from 'react-router-dom';
+import getTheme from './theme';
 
-// const ipc = require('electron').ipcRenderer;
-
-// Or Create your Own theme:
-const theme = createMuiTheme({
-  palette: {
-    primary: {
-      main: '#39c7cc',
-    },
-    secondary: {
-      main: '#E33E7F',
-    },
-  },
-});
-
+const theme = getTheme();
 const useStyles = makeStyles(() =>
   createStyles({
     root: {
       flexGrow: 1,
-      background:
-        'linear-gradient(200.96deg, #fedc2a -29.09%, #dd5789 51.77%, #7a2c9e 129.35%)',
+      background: theme.palette.background.default,
       color: 'white',
       height: '100vh',
       padding: theme.spacing(4),
