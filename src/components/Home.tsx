@@ -11,9 +11,9 @@ import {
 import SendIcon from '@material-ui/icons/Send';
 import MicOffIcon from '@material-ui/icons/MicOff';
 import { BrowserWindow, remote } from 'electron';
-import getTheme from './Theme';
+import * as Theme from './Theme';
 
-const theme = getTheme();
+const theme = Theme.default();
 const useStyles = makeStyles(() =>
   createStyles({
     root: {
