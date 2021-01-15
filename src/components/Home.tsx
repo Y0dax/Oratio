@@ -13,6 +13,8 @@ import MicOffIcon from '@material-ui/icons/MicOff';
 import { BrowserWindow, remote } from 'electron';
 import * as Theme from './Theme';
 
+// const fs = require('fs');
+
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
   createStyles({
@@ -65,10 +67,20 @@ const handleOpenObs = async () => {
       webPreferences: {
         nodeIntegration: true,
         // devTools: true,
-        // offscreen: true,
+        // Soffscreen: true,
       },
     });
     win.loadURL(`file://${__dirname}/index.html#/obs`);
+    // win.webContents.setFrameRate(60);
+
+    // win.webContents.on('paint', (event, dirty, image) => {
+    //   // updateBitmap(dirty, image.getBitmap())
+    //   fs.writeFile('ex.png', image.toPNG(), (err: Error) => {
+    //     if (err) throw err;
+    //     // eslint-disable-next-line no-console
+    //     // console.log('The file has been saved!');
+    //   });
+    // });
 
     win.on('closed', () => {
       win = undefined;
@@ -90,8 +102,6 @@ const handleSpeechSendClicked = async (event: any) => {
 
 export default function Home() {
   const classes = useStyles();
-  document.body.style.background =
-    'linear-gradient(200.96deg,#fedc2a -29.09%, #dd5789 51.77%,#7a2c9e 129.35%);';
   return (
     <MuiThemeProvider theme={theme}>
       <div className={classes.root}>
