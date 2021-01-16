@@ -24,6 +24,8 @@ export default class AppUpdater {
   }
 }
 // app.disableHardwareAcceleration();
+// app.commandLine.appendSwitch('disable-gpu-compositing');
+// app.commandLine.appendSwitch('disable-gpu');
 let mainWindow: BrowserWindow | null = null;
 
 if (process.env.NODE_ENV === 'production') {
@@ -75,8 +77,19 @@ const createWindow = async () => {
     webPreferences: {
       nodeIntegration: true,
       enableRemoteModule: true,
+      // offscreen: true,
     },
   });
+
+  // mainWindow.webContents.on('paint', (event, dirty, image) => {
+  //   // updateBitmap(dirty, image.getBitmap())
+  //   fs.writeFile('ex.png', image.toPNG(), (err: Error) => {
+  //     if (err) throw err;
+  //     console.log('The file has been saved!');
+  //   });
+  // });
+
+  // mainWindow.webContents.setFrameRate(30);
 
   mainWindow.loadURL(`file://${__dirname}/index.html#/home`);
 
