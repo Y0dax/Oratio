@@ -112,6 +112,7 @@ const createWindow = async () => {
     if (process.platform !== 'darwin') {
       app.quit();
     }
+    globalShortcut.unregisterAll();
   });
 
   const menuBuilder = new MenuBuilder(mainWindow);
@@ -138,17 +139,18 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+  globalShortcut.unregisterAll();
 });
 
 app
   .whenReady()
+  .then(createWindow)
   .then(() => {
     globalShortcut.register('CommandOrControl+O', () => {
       mainWindow.show();
     });
     return mainWindow;
   })
-  .then(createWindow)
   .catch(console.log);
 
 app.on('activate', () => {
