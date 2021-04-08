@@ -62,8 +62,8 @@ const createWindow = async () => {
   }
 
   const RESOURCES_PATH = app.isPackaged
-    ? path.join(process.resourcesPath, 'resources')
-    : path.join(__dirname, '../resources');
+    ? path.join(process.resourcesPath, 'assets')
+    : path.join(__dirname, '../assets');
 
   const getAssetPath = (...paths: string[]): string => {
     return path.join(RESOURCES_PATH, ...paths);
@@ -92,6 +92,10 @@ const createWindow = async () => {
   // mainWindow.webContents.setFrameRate(30);
 
   mainWindow.loadURL(`file://${__dirname}/index.html#/home`);
+
+  /**
+   * Add event listeners...
+   */
 
   // @TODO: Use 'ready-to-show' event
   //        https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event
@@ -128,10 +132,6 @@ const createWindow = async () => {
   // eslint-disable-next-line
   new AppUpdater();
 };
-
-/**
- * Add event listeners...
- */
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even

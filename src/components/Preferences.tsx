@@ -44,16 +44,29 @@ const useStyles = makeStyles(() =>
 );
 
 export default function Preferences() {
-  const [volume, setVolume] = React.useState<number>(30);
+  const [volume, setVolume] = React.useState<number>(
+    parseInt(localStorage.getItem('volume') || '25', 10)
+  );
+  const [textSpeed, setTextSpeed] = React.useState<number>(
+    parseInt(localStorage.getItem('textSpeed') || '75', 10)
+  );
   const [sound, setSound] = React.useState('');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleVolumeChange = (_event: any, newValue: number | number[]) => {
     setVolume(newValue as number);
+    localStorage.setItem('volume', newValue.toString());
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleTextSpeedChange = (_event: any, newValue: number | number[]) => {
+    setTextSpeed(newValue as number);
+    localStorage.setItem('textSpeed', newValue.toString());
   };
 
   const handleSoundChange = (event: React.ChangeEvent<{ value: unknown }>) => {
     setSound(event.target.value as string);
+    localStorage.setItem('soundFileName', event.target.value as string);
   };
 
   const classes = useStyles();
@@ -99,6 +112,28 @@ export default function Preferences() {
                       onChange={handleVolumeChange}
                       aria-labelledby="continuous-slider"
                       valueLabelDisplay="on"
+                    />
+                  </Grid>
+                  <Grid item>
+                    <VolumeUp />
+                  </Grid>
+                </Grid>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography id="continuous-slider" gutterBottom>
+                  Text Speed
+                </Typography>
+                <Grid container spacing={3}>
+                  <Grid item>
+                    <VolumeDown />
+                  </Grid>
+                  <Grid item xs>
+                    <Slider
+                      value={textSpeed}
+                      onChange={handleTextSpeedChange}
+                      aria-labelledby="continuous-slider"
+                      valueLabelDisplay="on"
+                      max={100}
                     />
                   </Grid>
                   <Grid item>
