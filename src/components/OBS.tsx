@@ -32,10 +32,7 @@ const SpeechDisplay = React.forwardRef<HTMLSpanElement>((_props, ref) => {
   return <span ref={ref} />;
 });
 
-const speechSound = new Howl({
-  src: ['../assets/sounds/plink_positive_wooden.mp3'],
-  volume: 0.25,
-});
+const volume = parseFloat(localStorage.getItem('volume') || '25') / 100;
 
 export default function OBS() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,10 +40,13 @@ export default function OBS() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ipc.on('speech', (_event: any, message: any) => {
-    // eslint-disable-next-line no-console
-    console.log(message);
+    // TODO Test for performance impact of reading settings on every input
+    const speed = parseInt(localStorage.getItem('textSpeed') || '75', 10);
+    const speechSound = new Howl({
+      src: ['../assets/sounds/plink_positive_wooden.mp3'],
+      volume,
+    });
 
-    const speed = 100;
     let i = 0;
 
     const typewriter = () => {
@@ -59,7 +59,7 @@ export default function OBS() {
         speechDisplay.current.innerHTML += message.charAt(i);
         // eslint-disable-next-line no-plusplus
         i++;
-        setTimeout(typewriter, speed);
+        setTimeout(typewriter, 150 - speed);
       } else {
         setTimeout(() => {
           speechDisplay.current.innerHTML = '';
