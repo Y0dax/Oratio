@@ -147,7 +147,17 @@ app
   .then(createWindow)
   .then(() => {
     globalShortcut.register('CommandOrControl+O', () => {
-      mainWindow.show();
+      if (mainWindow?.isFocused()) {
+        // Minimizing the window in a Windows OS returns focus to the original app
+        // while hiding the app in a unix like OS returns focus
+        if (process.platform === 'win32') {
+          mainWindow?.minimize();
+        } else {
+          mainWindow?.hide();
+        }
+      } else {
+        mainWindow?.show();
+      }
     });
     return mainWindow;
   })
