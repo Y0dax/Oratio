@@ -11,7 +11,7 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, shell, globalShortcut } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -112,6 +112,7 @@ const createWindow = async () => {
     if (process.platform !== 'darwin') {
       app.quit();
     }
+    globalShortcut.unregisterAll();
   });
 
   const menuBuilder = new MenuBuilder(mainWindow);
@@ -138,9 +139,29 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+  globalShortcut.unregisterAll();
 });
 
-app.whenReady().then(createWindow).catch(console.log);
+app
+  .whenReady()
+  .then(createWindow)
+  .then(() => {
+    globalShortcut.register('CommandOrControl+O', () => {
+      if (mainWindow?.isFocused()) {
+        // Minimizing the window in a Windows OS returns focus to the original app
+        // while hiding the app in a unix like OS returns focus
+        if (process.platform === 'win32') {
+          mainWindow?.minimize();
+        } else {
+          mainWindow?.hide();
+        }
+      } else {
+        mainWindow?.show();
+      }
+    });
+    return mainWindow;
+  })
+  .catch(console.log);
 
 app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
