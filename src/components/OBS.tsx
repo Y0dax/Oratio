@@ -32,8 +32,6 @@ const SpeechDisplay = React.forwardRef<HTMLSpanElement>((_props, ref) => {
   return <span ref={ref} />;
 });
 
-const volume = parseFloat(localStorage.getItem('volume') || '25') / 100;
-
 export default function OBS() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const speechDisplay: any = useRef<HTMLSpanElement>(null);
@@ -44,7 +42,7 @@ export default function OBS() {
     const speed = parseInt(localStorage.getItem('textSpeed') || '75', 10);
     const speechSound = new Howl({
       src: ['../assets/sounds/plink_positive_wooden.mp3'],
-      volume,
+      volume = parseFloat(localStorage.getItem('volume') || '50') / 100,
     });
 
     let i = 0;
