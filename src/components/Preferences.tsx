@@ -17,6 +17,7 @@ import {
 import { VolumeDown, VolumeUp } from '@material-ui/icons';
 import { Link } from 'react-router-dom';
 import * as Theme from './Theme';
+import FontSizeSlider from './settings/FontSizeSlider';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -140,6 +141,9 @@ export default function Preferences() {
                     <VolumeUp />
                   </Grid>
                 </Grid>
+              </Grid>
+              <Grid item xs={6}>
+                <FontSizeSlider />
               </Grid>
             </Grid>
             <Link to="/home">Home</Link>

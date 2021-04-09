@@ -40,12 +40,14 @@ export default function OBS() {
   ipc.on('speech', (_event: any, message: any) => {
     // TODO Test for performance impact of reading settings on every input
     const speed = parseInt(localStorage.getItem('textSpeed') || '75', 10);
+    const fontSize = parseInt(localStorage.getItem('fontSize') || '48', 10);
     const speechSound = new Howl({
       src: ['../assets/sounds/plink_positive_wooden.mp3'],
       volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
     });
 
     let i = 0;
+    speechDisplay.current.style.fontSize = `${fontSize}px`;
 
     const typewriter = () => {
       if (i < message.length) {
