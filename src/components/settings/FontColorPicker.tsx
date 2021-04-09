@@ -5,9 +5,8 @@ import ColorLensIcon from '@material-ui/icons/ColorLens';
 import { SketchPicker } from 'react-color';
 
 export default function FontColorPicker() {
-  const [fontColor, setFontColor] = React.useState<number>(
-    parseInt(localStorage.getItem('fontColor') || '48', 10)
-  );
+  const initColor = localStorage.getItem('fontColor') || '#ffffff';
+  const [fontColor, setFontColor] = React.useState<string>(initColor);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleFontColorChange = (color: any) => {

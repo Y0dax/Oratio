@@ -18,9 +18,12 @@ const useStyles = makeStyles(() =>
   })
 );
 
-const options = [];
-fs.readdir('assets/sounds', (err, files) => {
-  files.forEach((file) => {
+const options: string[] = [];
+fs.readdir('assets/sounds', (err: Error, files: string[]) => {
+  if (err) {
+    throw err;
+  }
+  files.forEach((file: string) => {
     options.push(file);
   });
 });
