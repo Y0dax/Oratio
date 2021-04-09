@@ -46,8 +46,9 @@ export default function OBS() {
       localStorage.getItem('fontWeight') || '400',
       10
     );
+    const soundFileName = localStorage.getItem('soundFileName');
     const speechSound = new Howl({
-      src: ['../assets/sounds/plink_positive_wooden.mp3'],
+      src: [`../assets/sounds/${soundFileName}`],
       volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
     });
 

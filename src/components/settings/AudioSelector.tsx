@@ -6,8 +6,7 @@ import * as Theme from '../Theme';
 
 // TODO not good to mix ES6 and ES5 syntax but standard import failed
 // should find a way to consolidate this
-const { remote } = window.require('electron');
-const electronFs = remote.require('fs');
+const fs = require('fs');
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -20,7 +19,7 @@ const useStyles = makeStyles(() =>
 );
 
 const options = [];
-electronFs.readdir('assets/sounds', (err, files) => {
+fs.readdir('assets/sounds', (err, files) => {
   files.forEach((file) => {
     options.push(file);
   });
