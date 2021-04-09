@@ -42,6 +42,10 @@ export default function OBS() {
     const speed = parseInt(localStorage.getItem('textSpeed') || '75', 10);
     const fontSize = parseInt(localStorage.getItem('fontSize') || '48', 10);
     const fontColor = localStorage.getItem('fontColor') || '#ffffff';
+    const fontWeight = parseInt(
+      localStorage.getItem('fontWeight') || '400',
+      10
+    );
     const speechSound = new Howl({
       src: ['../assets/sounds/plink_positive_wooden.mp3'],
       volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
@@ -50,6 +54,7 @@ export default function OBS() {
     let i = 0;
     speechDisplay.current.style.fontSize = `${fontSize}px`;
     speechDisplay.current.style.color = fontColor;
+    speechDisplay.current.style.fontWeight = fontWeight;
 
     const typewriter = () => {
       if (i < message.length) {

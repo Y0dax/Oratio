@@ -19,6 +19,7 @@ import { Link } from 'react-router-dom';
 import * as Theme from './Theme';
 import FontSizeSlider from './settings/FontSizeSlider';
 import FontColorPicker from './settings/FontColorPicker';
+import FontBoldSlider from './settings/FontBoldSlider';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -148,6 +149,9 @@ export default function Preferences() {
               </Grid>
               <Grid item xs={6}>
                 <FontColorPicker />
+              </Grid>
+              <Grid item xs={6}>
+                <FontBoldSlider />
               </Grid>
             </Grid>
             <Link to="/home">Home</Link>
