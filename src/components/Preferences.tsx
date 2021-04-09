@@ -5,21 +5,14 @@ import {
   createStyles,
   MuiThemeProvider,
 } from '@material-ui/core/styles';
-import {
-  FormControl,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Select,
-  Slider,
-  Typography,
-} from '@material-ui/core';
+import { Grid, Slider, Typography } from '@material-ui/core';
 import { VolumeDown, VolumeUp } from '@material-ui/icons';
 import { Link } from 'react-router-dom';
 import * as Theme from './Theme';
 import FontSizeSlider from './settings/FontSizeSlider';
 import FontColorPicker from './settings/FontColorPicker';
 import FontBoldSlider from './settings/FontBoldSlider';
+import AudioSelector from './settings/AudioSelector';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -53,7 +46,6 @@ export default function Preferences() {
   const [textSpeed, setTextSpeed] = React.useState<number>(
     parseInt(localStorage.getItem('textSpeed') || '75', 10)
   );
-  const [sound, setSound] = React.useState('');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleVolumeChange = (_event: any, newValue: number | number[]) => {
@@ -65,11 +57,6 @@ export default function Preferences() {
   const handleTextSpeedChange = (_event: any, newValue: number | number[]) => {
     setTextSpeed(newValue as number);
     localStorage.setItem('textSpeed', newValue.toString());
-  };
-
-  const handleSoundChange = (event: React.ChangeEvent<{ value: unknown }>) => {
-    setSound(event.target.value as string);
-    localStorage.setItem('soundFileName', event.target.value as string);
   };
 
   const classes = useStyles();
@@ -84,22 +71,7 @@ export default function Preferences() {
           >
             <Grid container direction="row" spacing={3}>
               <Grid item xs={6}>
-                <FormControl className={classes.formControl}>
-                  <InputLabel id="demo-simple-select-label">
-                    Speech Sound
-                  </InputLabel>
-                  <Select
-                    labelId="demo-simple-select-label"
-                    id="demo-simple-select"
-                    value={sound}
-                    autoWidth
-                    onChange={handleSoundChange}
-                  >
-                    <MenuItem value={10}>Option One</MenuItem>
-                    <MenuItem value={20}>Option Two</MenuItem>
-                    <MenuItem value={30}>Option Three</MenuItem>
-                  </Select>
-                </FormControl>
+                <AudioSelector />
               </Grid>
               <Grid item xs={6}>
                 <Typography id="continuous-slider" gutterBottom>
