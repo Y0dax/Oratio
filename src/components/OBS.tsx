@@ -5,6 +5,8 @@ import { Howl } from 'howler';
 
 const ipc = require('electron').ipcRenderer;
 
+const DEFAULT_TIMEOUT = 4000;
+
 const useStyles = makeStyles(() =>
   createStyles({
     root: {
@@ -62,6 +64,10 @@ function SpeechPhrase(props: any) {
     src: [`../assets/sounds/${soundFileName}`],
     volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
   });
+  const timeBetweenChars: number = 150 - speed;
+
+  // Account for the time to print a message so it doesn't disappear early
+  const timeout: number = message.length * timeBetweenChars + DEFAULT_TIMEOUT;
 
   useEffect(() => {
     speechDisplay.current.style.fontSize = fontSize;
@@ -84,7 +90,7 @@ function SpeechPhrase(props: any) {
         }
         // eslint-disable-next-line no-plusplus
         i++;
-        setTimeout(typewriter, 150 - speed);
+        setTimeout(typewriter, timeBetweenChars);
       } else {
         setTimeout(() => {
           // TODO: the reference object is initialized as null but sometimes comes
@@ -94,7 +100,7 @@ function SpeechPhrase(props: any) {
             speechDisplay.current.innerHTML = '';
           }
           props.dispatch({ type: 'shift' });
-        }, 4000);
+        }, timeout);
       }
     };
     setTimeout(typewriter, 0);
