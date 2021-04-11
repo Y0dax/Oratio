@@ -25,6 +25,9 @@ const useStyles = makeStyles(() =>
       fontSize: '3rem',
       textAlign: 'center',
     },
+    span: {
+      display: 'block',
+    },
   })
 );
 // eslint-disable-next-line react/display-name
@@ -88,7 +91,12 @@ function SpeechPhrase(props: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return <SpeechDisplay ref={speechDisplay} />;
+  const classes = useStyles();
+  return (
+    <div className={classes.span}>
+      <SpeechDisplay ref={speechDisplay} />
+    </div>
+  );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
