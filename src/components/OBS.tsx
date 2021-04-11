@@ -35,6 +35,17 @@ const SpeechDisplay = React.forwardRef<HTMLSpanElement>((_props, ref) => {
   return <span ref={ref} />;
 });
 
+function uniqueHash() {
+  const alpha =
+    '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const length = 8;
+  let rtn = '';
+  for (let i = 0; i < length; i += 1) {
+    rtn += alpha.charAt(Math.floor(Math.random() * alpha.length));
+  }
+  return rtn;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function SpeechPhrase(props: any) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -118,7 +129,8 @@ export default function OBS() {
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ipc.on('speech', (_event: any, message: any) => {
-      dispatch({ type: 'push', phrase: { message } });
+      const key: string = uniqueHash();
+      dispatch({ type: 'push', phrase: { message, key } });
     });
   }, []);
 
@@ -128,10 +140,9 @@ export default function OBS() {
       <title>Oratio - OBS</title>
       <div className={classes.titlebar} />
       <div className={classes.text}>
-        {state.phrases.map((phrase: { message: string }) => (
+        {state.phrases.map((phrase: { message: string; key: string }) => (
           <SpeechPhrase
-            // TODO: causes issues if the message is the same
-            key={phrase.message}
+            key={phrase.key}
             message={phrase.message}
             dispatch={dispatch}
           />
