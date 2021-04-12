@@ -19,7 +19,11 @@ const useStyles = makeStyles(() =>
 );
 
 const options: string[] = [];
-fs.readdir('assets/sounds', (err: Error, files: string[]) => {
+const assetLoc =
+  process.env.NODE_ENV === 'development'
+    ? 'assets/sounds'
+    : 'resources/assets/sounds';
+fs.readdir(assetLoc, (err: Error, files: string[]) => {
   if (err) {
     throw err;
   }
