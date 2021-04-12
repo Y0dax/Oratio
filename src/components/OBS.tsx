@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useReducer } from 'react';
 
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Howl } from 'howler';
+import uEmojiParser from 'universal-emoji-parser';
 
 const ipc = require('electron').ipcRenderer;
 
@@ -73,6 +74,8 @@ function SpeechPhrase(props: any) {
     src: [`../assets/sounds/${soundFileName}`],
     volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
   });
+  const regex = /:([^:]+):/g;
+  const emojis = [...message.matchAll(regex)];
   const timeBetweenChars: number = 150 - speed;
 
   // Account for the time to print a message so it doesn't disappear early
@@ -87,15 +90,32 @@ function SpeechPhrase(props: any) {
     const typewriter = () => {
       if (i < message.length) {
         speechSound.stop();
-        if (message.charAt(i) !== ' ') {
-          speechSound.play();
-        }
+        const charToFill = message.charAt(i);
+        const foundEmoji = emojis.find((emoji) => emoji.index === i);
+        let playSound = charToFill !== ' ';
 
+        // Check any emoji identifiers and attempt to gather a related image
+        if (foundEmoji) {
+          const emojiString = foundEmoji[0];
+          i += emojiString.length;
+          const emojiElement = uEmojiParser.parse(emojiString);
+
+          // Parser returns input string if no emoji is found
+          if (emojiString !== emojiElement) {
+            speechDisplay.current.innerHTML += emojiElement;
+          } else {
+            playSound = false;
+          }
+        }
         // TODO: the reference object is initialized as null but sometimes comes
         // through as null here even though it is mounted on the component
         // hack to bypass this but should figure out why
-        if (speechDisplay.current) {
-          speechDisplay.current.innerHTML += message.charAt(i);
+        else if (speechDisplay.current) {
+          speechDisplay.current.innerHTML += charToFill;
+        }
+
+        if (playSound) {
+          speechSound.play();
         }
         // eslint-disable-next-line no-plusplus
         i++;

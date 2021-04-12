@@ -29,5 +29,6 @@
     "src/renderer.prod.js",
     "src/dist",
     ".erb/dll"
-  ]
+  ],
+  "include": ["**/*", "decs.d.ts"]
 }
