@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Grid, Slider, Typography } from '@material-ui/core';
-import { VolumeDown, VolumeUp } from '@material-ui/icons';
+import SpeedIcon from '@material-ui/icons/Speed';
 
 export default function TextSpeedSlider() {
   const [textSpeed, setTextSpeed] = React.useState<number>(
@@ -21,7 +21,7 @@ export default function TextSpeedSlider() {
       </Typography>
       <Grid container spacing={3}>
         <Grid item>
-          <VolumeDown />
+          <SpeedIcon />
         </Grid>
         <Grid item xs>
           <Slider
@@ -31,9 +31,6 @@ export default function TextSpeedSlider() {
             valueLabelDisplay="on"
             max={100}
           />
-        </Grid>
-        <Grid item>
-          <VolumeUp />
         </Grid>
       </Grid>
     </div>

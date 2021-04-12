@@ -31,12 +31,21 @@ const useStyles = makeStyles(() =>
       color: 'white',
       fontSize: '3rem',
       textAlign: 'left',
-      padding: '2rem',
       display: 'table-cell',
       verticalAlign: 'bottom',
     },
+    bubble: {
+      backgroundColor: localStorage.getItem('bubbleColor') || '#000',
+      fontFamily: "'Baloo Da 2', cursive",
+      padding: '20px',
+      border: '3px solid #a9a9a9',
+      borderRadius: '8px',
+    },
     span: {
       display: 'block',
+    },
+    hidden: {
+      display: 'none',
     },
   })
 );
@@ -167,17 +176,25 @@ export default function OBS() {
   const classes = useStyles();
   return (
     <div className={classes.root}>
-      <title>Oratio - OBS</title>
+      <title>Oratio OBS Display</title>
       <div className={classes.titlebar} />
       <div className={classes.textTable}>
         <div className={classes.text}>
-          {state.phrases.map((phrase: { message: string; key: string }) => (
-            <SpeechPhrase
-              key={phrase.key}
-              message={phrase.message}
-              dispatch={dispatch}
-            />
-          ))}
+          <div
+            className={
+              state.phrases.length <= 0 ? classes.hidden : classes.bubble
+            }
+          >
+            {state.phrases.map((phrase: { message: string; key: string }) => {
+              return (
+                <SpeechPhrase
+                  key={phrase.key}
+                  message={phrase.message}
+                  dispatch={dispatch}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
