@@ -5,15 +5,16 @@ export default function Theme() {
     palette: {
       type: 'dark',
       background: {
-        default: '#191927',
-        paper: '#222230',
+        default: '#202124',
+        paper: '#43434f',
       },
       primary: {
-        main: '#14A5AE',
+        main: '#16c2d4',
       },
       secondary: {
-        main: '#E33E7F',
+        main: '#0F8C94',
       },
     },
   });
 }
+// https://colors.muz.li/palette/16c2d4/0f8c94/1943d4/16d423/0f9419

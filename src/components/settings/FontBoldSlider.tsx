@@ -31,6 +31,8 @@ export default function FontBoldSlider() {
             valueLabelDisplay="on"
             max={900}
             min={100}
+            step={100}
+            marks
           />
         </Grid>
       </Grid>

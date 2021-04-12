@@ -10,6 +10,7 @@ import {
 } from '@material-ui/core/styles';
 import SendIcon from '@material-ui/icons/Send';
 import MicOffIcon from '@material-ui/icons/MicOff';
+import SettingsIcon from '@material-ui/icons/Settings';
 import { BrowserWindow, remote } from 'electron';
 import * as Theme from './Theme';
 
@@ -31,6 +32,12 @@ const useStyles = makeStyles(() =>
       padding: theme.spacing(2),
       textAlign: 'center',
     },
+    preferences: {
+      marginRight: '10px',
+    },
+    link: {
+      textDecoration: 'none',
+    },
     icon: {
       fontSize: '10rem',
       // boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
@@ -44,8 +51,12 @@ const useStyles = makeStyles(() =>
       alignItems: 'center',
       margin: '20px 0',
     },
-    send: {
+    buttonIcon: {
       marginLeft: '5px',
+      marginRight: '5px',
+    },
+    bottomButtons: {
+      marginTop: '40px',
     },
   })
 );
@@ -131,7 +142,7 @@ export default function Home() {
                   type="submit"
                   // disabled
                 >
-                  Send <SendIcon className={classes.send} />
+                  Send <SendIcon className={classes.buttonIcon} />
                 </Button>
               </Grid>
             </Grid>
@@ -141,20 +152,36 @@ export default function Home() {
               <MicOffIcon className={classes.icon} />
             </div>
             <h1 className={classes.header}>Project Oratio</h1>
-            <Grid container spacing={3} alignContent="flex-end">
-              <Grid container item justify="flex-end" xs={12}>
+            <Grid
+              container
+              spacing={3}
+              alignContent="flex-end"
+              justify="flex-end"
+              className={classes.bottomButtons}
+            >
+              {/* <Grid container item justify="flex-end" xs={12}> */}
+              <Link to="/preferences" className={classes.link}>
                 <Button
-                  id="open-obs"
-                  variant="contained"
-                  color="primary"
-                  className={classes.button}
-                  onClick={handleOpenObs}
+                  id="open-preferences"
+                  variant="outlined"
+                  color="secondary"
+                  className={`${classes.button} ${classes.preferences}`}
                 >
-                  Open OBS display
+                  <SettingsIcon className={classes.buttonIcon} /> Preferences
                 </Button>
-              </Grid>
+              </Link>
+
+              <Button
+                id="open-obs"
+                variant="contained"
+                color="primary"
+                className={classes.button}
+                onClick={handleOpenObs}
+              >
+                Open OBS display
+              </Button>
+              {/* </Grid> */}
             </Grid>
-            <Link to="/preferences">Preferences</Link>
           </div>
         </div>
       </div>

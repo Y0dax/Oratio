@@ -5,7 +5,7 @@ import {
   createStyles,
   MuiThemeProvider,
 } from '@material-ui/core/styles';
-import { Grid } from '@material-ui/core';
+import { Button, Grid } from '@material-ui/core';
 import { Link } from 'react-router-dom';
 import * as Theme from './Theme';
 import FontSizeSlider from './settings/FontSizeSlider';
@@ -14,6 +14,7 @@ import FontBoldSlider from './settings/FontBoldSlider';
 import AudioSelector from './settings/AudioSelector';
 import TextSpeedSlider from './settings/TextSpeedSlider';
 import VolumeSlider from './settings/VolumeSlider';
+import BubbleBackgroundColorPicker from './settings/BubbleBackgroundColorSlider';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -32,6 +33,16 @@ const useStyles = makeStyles(() =>
       color: 'white',
       fontSize: '3rem',
       textAlign: 'center',
+    },
+    button: {
+      padding: theme.spacing(2),
+      textAlign: 'center',
+    },
+    link: {
+      textDecoration: 'none',
+    },
+    bottomButtons: {
+      marginTop: '40px',
     },
   })
 );
@@ -60,14 +71,35 @@ export default function Preferences() {
               <Grid item xs={6}>
                 <FontSizeSlider />
               </Grid>
+              <Grid item xs={12}>
+                <Grid item xs={6}>
+                  <FontBoldSlider />
+                </Grid>
+              </Grid>
               <Grid item xs={6}>
                 <FontColorPicker />
               </Grid>
               <Grid item xs={6}>
-                <FontBoldSlider />
+                <BubbleBackgroundColorPicker />
               </Grid>
             </Grid>
-            <Link to="/home">Home</Link>
+            <Grid
+              container
+              direction="row"
+              spacing={3}
+              className={classes.bottomButtons}
+            >
+              <Link to="/home" className={classes.link}>
+                <Button
+                  id="open-preferences"
+                  variant="contained"
+                  className={classes.button}
+                  color="primary"
+                >
+                  Back
+                </Button>
+              </Link>
+            </Grid>
           </form>
         </div>
       </div>
