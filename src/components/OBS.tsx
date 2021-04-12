@@ -22,19 +22,28 @@ const useStyles = makeStyles(() =>
       '-webkit-app-region': 'drag',
       height: '35px',
     },
+    textTable: {
+      display: 'table',
+      height: '100%',
+    },
     text: {
       color: 'white',
       fontSize: '3rem',
-      textAlign: 'center',
+      textAlign: 'left',
+      padding: '2rem',
+      display: 'table-cell',
+      verticalAlign: 'bottom',
     },
     span: {
       display: 'block',
     },
   })
 );
+
 // eslint-disable-next-line react/display-name
 const SpeechDisplay = React.forwardRef<HTMLSpanElement>((_props, ref) => {
-  return <span ref={ref} />;
+  const classes = useStyles();
+  return <span ref={ref} className={classes.span} />;
 });
 
 function uniqueHash() {
@@ -108,12 +117,7 @@ function SpeechPhrase(props: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const classes = useStyles();
-  return (
-    <div className={classes.span}>
-      <SpeechDisplay ref={speechDisplay} />
-    </div>
-  );
+  return <SpeechDisplay ref={speechDisplay} />;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -145,14 +149,16 @@ export default function OBS() {
     <div className={classes.root}>
       <title>Oratio - OBS</title>
       <div className={classes.titlebar} />
-      <div className={classes.text}>
-        {state.phrases.map((phrase: { message: string; key: string }) => (
-          <SpeechPhrase
-            key={phrase.key}
-            message={phrase.message}
-            dispatch={dispatch}
-          />
-        ))}
+      <div className={classes.textTable}>
+        <div className={classes.text}>
+          {state.phrases.map((phrase: { message: string; key: string }) => (
+            <SpeechPhrase
+              key={phrase.key}
+              message={phrase.message}
+              dispatch={dispatch}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
