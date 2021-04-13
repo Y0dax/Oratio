@@ -1,0 +1,15 @@
+export default {
+  Speech: '文章',
+  Send: '送る',
+  Preferences: '設定',
+  'Open OBS Display': 'OBSウィンドウを開く',
+  Language: '言語',
+  'Speech Sound': '音声',
+  Back: '戻る',
+  'Text Speed': '文字の速さ',
+  Volume: '音量',
+  'Text Size': '文字の大きさ',
+  'Text Color': '文字色',
+  'Text Boldness': '文字の太さ',
+  'Speech Bubble Color': 'ふきだしの色',
+};

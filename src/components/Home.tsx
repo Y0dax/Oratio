@@ -12,9 +12,8 @@ import SendIcon from '@material-ui/icons/Send';
 import MicOffIcon from '@material-ui/icons/MicOff';
 import SettingsIcon from '@material-ui/icons/Settings';
 import { BrowserWindow, remote } from 'electron';
+import { useTranslation } from 'react-i18next';
 import * as Theme from './Theme';
-
-// const fs = require('fs');
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -113,6 +112,7 @@ const handleSpeechSendClicked = async (event: any) => {
 
 export default function Home() {
   const classes = useStyles();
+  const { t } = useTranslation();
   return (
     <MuiThemeProvider theme={theme}>
       <div className={classes.root}>
@@ -127,7 +127,7 @@ export default function Home() {
                 <TextField
                   name="speech"
                   id="speech-input"
-                  label="Speech"
+                  label={t('Speech')}
                   variant="outlined"
                   fullWidth
                   autoFocus
@@ -142,7 +142,7 @@ export default function Home() {
                   type="submit"
                   // disabled
                 >
-                  Send <SendIcon className={classes.buttonIcon} />
+                  {t('Send')} <SendIcon className={classes.buttonIcon} />
                 </Button>
               </Grid>
             </Grid>
@@ -167,7 +167,8 @@ export default function Home() {
                   color="secondary"
                   className={`${classes.button} ${classes.preferences}`}
                 >
-                  <SettingsIcon className={classes.buttonIcon} /> Preferences
+                  <SettingsIcon className={classes.buttonIcon} />{' '}
+                  {t('Preferences')}
                 </Button>
               </Link>
 
@@ -178,7 +179,7 @@ export default function Home() {
                 className={classes.button}
                 onClick={handleOpenObs}
               >
-                Open OBS display
+                {t('Open OBS Display')}
               </Button>
               {/* </Grid> */}
             </Grid>

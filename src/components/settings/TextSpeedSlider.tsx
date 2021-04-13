@@ -2,8 +2,10 @@ import React from 'react';
 
 import { Grid, Slider, Typography } from '@material-ui/core';
 import SpeedIcon from '@material-ui/icons/Speed';
+import { useTranslation } from 'react-i18next';
 
 export default function TextSpeedSlider() {
+  const { t } = useTranslation();
   const [textSpeed, setTextSpeed] = React.useState<number>(
     parseInt(localStorage.getItem('textSpeed') || '75', 10)
   );
@@ -17,7 +19,7 @@ export default function TextSpeedSlider() {
   return (
     <div>
       <Typography id="continuous-slider" gutterBottom>
-        Text Speed
+        {t('Text Speed')}
       </Typography>
       <Grid container spacing={3}>
         <Grid item>

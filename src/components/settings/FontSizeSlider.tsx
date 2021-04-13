@@ -2,8 +2,10 @@ import React from 'react';
 
 import { Grid, Slider, Typography } from '@material-ui/core';
 import FormatSizeIcon from '@material-ui/icons/FormatSize';
+import { useTranslation } from 'react-i18next';
 
 export default function FontSizeSlider() {
+  const { t } = useTranslation();
   const [fontSize, setFontSize] = React.useState<number>(
     parseInt(localStorage.getItem('fontSize') || '48', 10)
   );
@@ -17,7 +19,7 @@ export default function FontSizeSlider() {
   return (
     <div>
       <Typography id="continuous-slider" gutterBottom>
-        Text Size
+        {t('Text Size')}
       </Typography>
       <Grid container spacing={3}>
         <Grid item>

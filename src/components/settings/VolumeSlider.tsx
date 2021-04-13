@@ -2,8 +2,10 @@ import React from 'react';
 
 import { Grid, Slider, Typography } from '@material-ui/core';
 import { VolumeDown, VolumeUp } from '@material-ui/icons';
+import { useTranslation } from 'react-i18next';
 
 export default function VolumeSlider() {
+  const { t } = useTranslation();
   const [volume, setVolume] = React.useState<number>(
     parseInt(localStorage.getItem('volume') || '25', 10)
   );
@@ -17,7 +19,7 @@ export default function VolumeSlider() {
   return (
     <div>
       <Typography id="continuous-slider" gutterBottom>
-        Volume
+        {t('Volume')}
       </Typography>
       <Grid container spacing={3}>
         <Grid item>
