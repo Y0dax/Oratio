@@ -10,6 +10,7 @@ import Preferences from './components/Preferences';
 import Home from './components/Home';
 import enTranslations from './translations/en';
 import jaTranslations from './translations/ja';
+import deTranslations from './translations/de';
 
 // export default class App extends React.Component {
 //   constructor(props: never) {
@@ -40,6 +41,9 @@ i18n
       },
       ja: {
         translation: jaTranslations,
+      },
+      de: {
+        translation: deTranslations,
       },
     },
     lng: localStorage.getItem('selectedLang') || navigator.language,

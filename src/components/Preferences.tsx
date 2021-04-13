@@ -56,11 +56,7 @@ export default function Preferences() {
     <MuiThemeProvider theme={theme}>
       <div className={classes.root}>
         <div className={classes.content}>
-          <form
-            noValidate
-            autoComplete="off"
-            // onSubmit={handleSpeechSendClicked}
-          >
+          <form noValidate autoComplete="off">
             <Grid container direction="row" spacing={3}>
               <Grid item xs={6}>
                 <AudioSelector />
@@ -74,10 +70,11 @@ export default function Preferences() {
               <Grid item xs={6}>
                 <FontSizeSlider />
               </Grid>
-              <Grid item xs={12}>
-                <Grid item xs={6}>
-                  <FontBoldSlider />
-                </Grid>
+              <Grid item xs={6}>
+                <FontBoldSlider />
+              </Grid>
+              <Grid item xs={6}>
+                <LanguageSelector />
               </Grid>
               <Grid item xs={6}>
                 <FontColorPicker />
@@ -103,10 +100,6 @@ export default function Preferences() {
                     {t('Back')}
                   </Button>
                 </Link>
-              </Grid>
-              <Grid item xs={4} />
-              <Grid item xs={4} style={{ marginTop: '-20px' }}>
-                <LanguageSelector />
               </Grid>
             </Grid>
           </form>
