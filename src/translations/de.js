@@ -1,0 +1,15 @@
+export default {
+  Speech: 'Sprache',
+  Send: 'Senden',
+  Preferences: 'Präferenzen',
+  'Open OBS Display': 'Open OBS Display',
+  Language: 'Sprache',
+  'Speech Sound': 'Sprach Sound',
+  Back: 'Zurück',
+  'Text Speed': 'Textgeschwindigkeit',
+  Volume: 'Lautstärke',
+  'Text Size': 'Schriftgröße',
+  'Text Color': 'Textfarbe',
+  'Text Boldness': 'Textbreite',
+  'Speech Bubble Color': 'Sprechblasenfarbe',
+};

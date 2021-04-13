@@ -24,6 +24,10 @@ const options = [
     value: 'ja',
     text: '日本語',
   },
+  {
+    value: 'de',
+    text: 'Deutsche',
+  },
 ];
 
 export default function LanguageSelector() {
