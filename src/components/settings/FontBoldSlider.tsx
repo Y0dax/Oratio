@@ -2,8 +2,10 @@ import React from 'react';
 
 import { Grid, Slider, Typography } from '@material-ui/core';
 import FormatBoldIcon from '@material-ui/icons/FormatBold';
+import { useTranslation } from 'react-i18next';
 
 export default function FontBoldSlider() {
+  const { t } = useTranslation();
   const [fontWeight, setFontWeight] = React.useState<number>(
     parseInt(localStorage.getItem('fontWeight') || '400', 10)
   );
@@ -17,7 +19,7 @@ export default function FontBoldSlider() {
   return (
     <div>
       <Typography id="continuous-slider" gutterBottom>
-        Text Boldness
+        {t('Text Boldness')}
       </Typography>
       <Grid container spacing={3}>
         <Grid item>

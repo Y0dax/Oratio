@@ -7,6 +7,7 @@ import {
 } from '@material-ui/core/styles';
 import { Button, Grid } from '@material-ui/core';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import * as Theme from './Theme';
 import FontSizeSlider from './settings/FontSizeSlider';
 import FontColorPicker from './settings/FontColorPicker';
@@ -15,6 +16,7 @@ import AudioSelector from './settings/AudioSelector';
 import TextSpeedSlider from './settings/TextSpeedSlider';
 import VolumeSlider from './settings/VolumeSlider';
 import BubbleBackgroundColorPicker from './settings/BubbleBackgroundColorSlider';
+import LanguageSelector from './settings/LanguageSelector';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -49,6 +51,7 @@ const useStyles = makeStyles(() =>
 
 export default function Preferences() {
   const classes = useStyles();
+  const { t } = useTranslation();
   return (
     <MuiThemeProvider theme={theme}>
       <div className={classes.root}>
@@ -89,16 +92,22 @@ export default function Preferences() {
               spacing={3}
               className={classes.bottomButtons}
             >
-              <Link to="/home" className={classes.link}>
-                <Button
-                  id="open-preferences"
-                  variant="contained"
-                  className={classes.button}
-                  color="primary"
-                >
-                  Back
-                </Button>
-              </Link>
+              <Grid item xs={4}>
+                <Link to="/home" className={classes.link}>
+                  <Button
+                    id="open-preferences"
+                    variant="contained"
+                    className={classes.button}
+                    color="primary"
+                  >
+                    {t('Back')}
+                  </Button>
+                </Link>
+              </Grid>
+              <Grid item xs={4} />
+              <Grid item xs={4} style={{ marginTop: '-20px' }}>
+                <LanguageSelector />
+              </Grid>
             </Grid>
           </form>
         </div>

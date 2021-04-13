@@ -3,9 +3,13 @@ import { render } from 'react-dom';
 import './App.global.css';
 import { HashRouter as Router, Switch, Route } from 'react-router-dom';
 // eslint-disable-next-line import/no-named-as-default
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
 import OBS from './components/OBS';
 import Preferences from './components/Preferences';
 import Home from './components/Home';
+import enTranslations from './translations/en';
+import jaTranslations from './translations/ja';
 
 // export default class App extends React.Component {
 //   constructor(props: never) {
@@ -25,6 +29,26 @@ import Home from './components/Home';
 //     );
 //   }
 // }\
+
+// Initialize i18n
+i18n
+  .use(initReactI18next) // passes i18n down to react-i18next
+  .init({
+    resources: {
+      en: {
+        translation: enTranslations,
+      },
+      ja: {
+        translation: jaTranslations,
+      },
+    },
+    lng: localStorage.getItem('selectedLang') || navigator.language,
+    fallbackLng: 'en',
+
+    interpolation: {
+      escapeValue: false,
+    },
+  });
 
 export default function App() {
   return (

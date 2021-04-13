@@ -2,6 +2,7 @@ import React from 'react';
 
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { FormControl, InputLabel, MenuItem, Select } from '@material-ui/core';
+import { useTranslation } from 'react-i18next';
 import * as Theme from '../Theme';
 
 // TODO not good to mix ES6 and ES5 syntax but standard import failed
@@ -33,6 +34,7 @@ fs.readdir(assetLoc, (err: Error, files: string[]) => {
 });
 
 export default function AudioSelector() {
+  const { t } = useTranslation();
   const [sound, setSound] = React.useState('');
 
   const handleSoundChange = (event: React.ChangeEvent<{ value: unknown }>) => {
@@ -44,7 +46,9 @@ export default function AudioSelector() {
   return (
     <div>
       <FormControl className={classes.root}>
-        <InputLabel id="demo-simple-select-label">Speech Sound</InputLabel>
+        <InputLabel id="demo-simple-select-label">
+          {t('Speech Sound')}
+        </InputLabel>
         <Select
           labelId="demo-simple-select-label"
           id="demo-simple-select"
