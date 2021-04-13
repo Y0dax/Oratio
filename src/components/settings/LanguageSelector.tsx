@@ -26,7 +26,7 @@ const options = [
   },
   {
     value: 'de',
-    text: 'Deutsche',
+    text: 'Deutsch',
   },
 ];
 
