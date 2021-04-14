@@ -139,7 +139,7 @@
     "@babel/preset-typescript": "^7.12.7",
     "@babel/register": "^7.12.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.4.3",
-    "@teamsupercell/typings-for-css-modules-loader": "^2.4.0",
+    "@teamsupercell/typings-for-css-modules-loader": "^2.5.1",
     "@testing-library/jest-dom": "^5.11.6",
     "@testing-library/react": "^11.2.2",
     "@types/enzyme": "^3.10.5",
