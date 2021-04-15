@@ -144,7 +144,7 @@
     "@testing-library/react": "^11.2.2",
     "@types/enzyme": "^3.10.5",
     "@types/enzyme-adapter-react-16": "^1.0.6",
-    "@types/history": "4.7.6",
+    "@types/history": "4.7.8",
     "@types/howler": "^2.2.2",
     "@types/jest": "^26.0.22",
     "@types/node": "14.14.40",
