@@ -15,6 +15,7 @@ import { app, BrowserWindow, shell, globalShortcut } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
+import { server } from '../server/server';
 
 export default class AppUpdater {
   constructor() {
@@ -159,6 +160,11 @@ app
         mainWindow?.show();
       }
     });
+
+    server.listen(3000, () => {
+      console.log(`Server running on http://localhost:3000`);
+    });
+
     return mainWindow;
   })
   .catch(console.log);
