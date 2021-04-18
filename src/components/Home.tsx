@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Grid from '@material-ui/core/Grid';
 import TextField from '@material-ui/core/TextField';
@@ -13,6 +13,7 @@ import MicOffIcon from '@material-ui/icons/MicOff';
 import SettingsIcon from '@material-ui/icons/Settings';
 import { BrowserWindow, remote } from 'electron';
 import { useTranslation } from 'react-i18next';
+import { io } from 'socket.io-client';
 import * as Theme from './Theme';
 
 const theme = Theme.default();
@@ -98,21 +99,28 @@ const handleOpenObs = async () => {
   }
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const handleSpeechSendClicked = async (event: any) => {
-  event.preventDefault();
-  const { speech } = event.currentTarget.elements;
-  // eslint-disable-next-line no-console
-  console.log(speech.value);
-  if (win !== undefined) {
-    win.webContents.send('speech', speech.value);
-    speech.value = '';
-  }
-};
-
 export default function Home() {
   const classes = useStyles();
   const { t } = useTranslation();
+  const socket = io('http://localhost:3000');
+
+  useEffect(() => {
+    return () => socket.disconnect();
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSpeechSendClicked = async (event: any) => {
+    event.preventDefault();
+    const { speech } = event.currentTarget.elements;
+    // eslint-disable-next-line no-console
+    console.log(speech.value);
+    socket.emit('phraseSend', speech.value);
+    if (win !== undefined) {
+      win.webContents.send('speech', speech.value);
+    }
+    speech.value = '';
+  };
+
   return (
     <MuiThemeProvider theme={theme}>
       <div className={classes.root}>

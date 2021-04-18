@@ -5,7 +5,7 @@
     "build:renderer": "cross-env NODE_ENV=production webpack --config ./.erb/configs/webpack.config.renderer.prod.babel.js",
     "build:server": "webpack --config webpack.config.display.js && webpack --config webpack.config.server.js",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir src",
-    "lint": "cross-env NODE_ENV=development eslint . --cache --ext .js,.jsx,.ts,.tsx",
+    "lint": "cross-env NODE_ENV=development eslint . --cache --ext .js,.jsx,.ts,.tsx --fix",
     "package": "rm -rf src/dist && yarn build && electron-builder build --publish never",
     "postinstall": "node -r @babel/register .erb/scripts/CheckNativeDep.js && electron-builder install-app-deps && yarn cross-env NODE_ENV=development webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.babel.js && opencollective-postinstall && yarn-deduplicate yarn.lock",
     "start": "node -r @babel/register ./.erb/scripts/CheckPortInUse.js && cross-env yarn start:renderer",
@@ -238,6 +238,8 @@
     "react-i18next": "^11.8.13",
     "react-router-dom": "^5.2.0",
     "regenerator-runtime": "^0.13.5",
+    "socket.io": "^4.0.1",
+    "socket.io-client": "^4.0.1",
     "source-map-support": "^0.5.19",
     "universal-emoji-parser": "^0.5.28"
   },

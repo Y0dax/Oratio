@@ -5,6 +5,9 @@ import { Howl } from 'howler';
 // TODO: Build errors when using emojilib, should figure it out
 // but will bypass it for testing right now
 // import uEmojiParser from 'universal-emoji-parser';
+import { io } from 'socket.io-client';
+
+const socket = io();
 
 const DEFAULT_TIMEOUT = 4000;
 
@@ -163,13 +166,16 @@ function reducer(state: any, action: any) {
   }
 }
 
-const initPhrase = [
-  { message: 'This is a test message', key: uniqueHash() },
-  { message: 'This is another test message', key: uniqueHash() },
-];
-
 export default function App() {
-  const [state, dispatch] = useReducer(reducer, { phrases: initPhrase });
+  const [state, dispatch] = useReducer(reducer, { phrases: [] });
+
+  useEffect(() => {
+    socket.on('phraseRender', (message) => {
+      const key: string = uniqueHash();
+      dispatch({ type: 'push', phrase: { message, key } });
+    });
+    return () => socket.disconnect();
+  }, []);
 
   const classes = useStyles();
   return (
