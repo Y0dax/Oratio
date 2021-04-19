@@ -31,8 +31,8 @@ const server = createServer(app);
 const io = new Server(server);
 
 io.on('connection', (socket: Socket) => {
-  socket.on('phraseSend', (phrase: string) => {
-    socket.broadcast.emit('phraseRender', phrase);
+  socket.on('phraseSend', (data) => {
+    socket.broadcast.emit('phraseRender', data);
   });
 });
 

@@ -114,7 +114,18 @@ export default function Home() {
     const { speech } = event.currentTarget.elements;
     // eslint-disable-next-line no-console
     console.log(speech.value);
-    socket.emit('phraseSend', speech.value);
+    socket.emit('phraseSend', {
+      phrase: speech.value,
+      settings: {
+        speed: parseInt(localStorage.getItem('textSpeed') || '75', 10),
+        fontSize: parseInt(localStorage.getItem('fontSize') || '48', 10),
+        fontColor: localStorage.getItem('fontColor') || '#ffffff',
+        fontWeight: parseInt(localStorage.getItem('fontWeight') || '400', 10),
+        soundFileName: localStorage.getItem('soundFileName'),
+        volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
+        bubbleColor: localStorage.getItem('bubbleColor') || '#000',
+      },
+    });
     if (win !== undefined) {
       win.webContents.send('speech', speech.value);
     }

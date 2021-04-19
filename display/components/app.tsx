@@ -11,47 +11,51 @@ const socket = io();
 
 const DEFAULT_TIMEOUT = 4000;
 
+// let bubbleColor = '#000';
+
 const useStyles = makeStyles(() =>
   createStyles({
-    root: {
+    root: () => ({
       flexGrow: 1,
       backgroundColor: 'blue',
       height: '100vh',
       // padding: theme.spacing(4),
-    },
-    titlebar: {
+    }),
+    titlebar: () => ({
       position: 'absolute',
       width: '100%',
       top: 0,
       '-webkit-app-region': 'drag',
       height: '35px',
-    },
-    textTable: {
+    }),
+    textTable: () => ({
       display: 'table',
       height: '100%',
-    },
-    text: {
+    }),
+    text: () => ({
       color: 'white',
       fontSize: '3rem',
       textAlign: 'left',
       display: 'table-cell',
       verticalAlign: 'bottom',
-    },
-    bubble: {
-      backgroundColor: '#000',
+    }),
+    bubble: (props) => ({
+      backgroundColor: props.bubbleColor,
       fontFamily: "'Baloo Da 2', cursive",
       padding: '20px',
       border: '3px solid #a9a9a9',
       borderRadius: '8px',
-    },
-    span: {
+    }),
+    span: () => ({
       display: 'block',
-    },
-    hidden: {
+    }),
+    hidden: () => ({
       display: 'none',
-    },
+    }),
   })
 );
+
+// const useStyles = makeStyles((theme) => createStyles(theme));
 
 // eslint-disable-next-line react/display-name
 const SpeechDisplay = React.forwardRef<HTMLSpanElement>((_props, ref) => {
@@ -74,18 +78,18 @@ function uniqueHash() {
 function SpeechPhrase(props: any) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const speechDisplay: any = useRef<HTMLSpanElement>(null);
-  const { message } = props;
+  const { message, settings } = props;
 
   // TODO: localStorage does not work here since the browser source is different
   // TODO Test for performance impact of reading settings on every input
-  const speed = parseInt('75', 10);
-  const fontSize = parseInt('48', 10);
-  const fontColor = '#ffffff';
-  const fontWeight = parseInt('400', 10);
-  const soundFileName = 'sqek.mp3';
+  const { speed } = settings;
+  const { fontSize } = settings;
+  const { fontColor } = settings;
+  const { fontWeight } = settings;
+  const { soundFileName } = settings;
   const speechSound = new Howl({
     src: [`../assets/sounds/${soundFileName}`],
-    volume: parseFloat('50') / 100,
+    volume: settings.volume,
   });
   //   const regex = /:([^:]+):/g;
   //   const emojis = [...message.matchAll(regex)];
@@ -158,26 +162,34 @@ function SpeechPhrase(props: any) {
 function reducer(state: any, action: any) {
   switch (action.type) {
     case 'push':
-      return { phrases: [...state.phrases, action.phrase] };
+      return {
+        phrases: [...state.phrases, action.phrase],
+        settings: action.settings,
+      };
     case 'shift':
-      return { phrases: state.phrases.slice(1) };
+      return { phrases: state.phrases.slice(1), settings: state.settings };
     default:
       return state;
   }
 }
 
 export default function App() {
-  const [state, dispatch] = useReducer(reducer, { phrases: [] });
+  const [state, dispatch] = useReducer(reducer, { phrases: [], settings: {} });
 
   useEffect(() => {
-    socket.on('phraseRender', (message) => {
+    socket.on('phraseRender', (data) => {
       const key: string = uniqueHash();
-      dispatch({ type: 'push', phrase: { message, key } });
+      const message: string = data.phrase;
+      dispatch({
+        type: 'push',
+        phrase: { message, key },
+        settings: data.settings,
+      });
     });
     return () => socket.disconnect();
   }, []);
 
-  const classes = useStyles();
+  const classes = useStyles({ bubbleColor: state.settings.bubbleColor });
   return (
     <div className={classes.root}>
       <title>Oratio OBS Display</title>
@@ -195,6 +207,7 @@ export default function App() {
                   key={phrase.key}
                   message={phrase.message}
                   dispatch={dispatch}
+                  settings={state.settings}
                 />
               );
             })}
