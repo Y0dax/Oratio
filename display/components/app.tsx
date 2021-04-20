@@ -11,8 +11,6 @@ const socket = io();
 
 const DEFAULT_TIMEOUT = 4000;
 
-// let bubbleColor = '#000';
-
 const useStyles = makeStyles(() =>
   createStyles({
     root: () => ({
@@ -54,8 +52,6 @@ const useStyles = makeStyles(() =>
     }),
   })
 );
-
-// const useStyles = makeStyles((theme) => createStyles(theme));
 
 // eslint-disable-next-line react/display-name
 const SpeechDisplay = React.forwardRef<HTMLSpanElement>((_props, ref) => {

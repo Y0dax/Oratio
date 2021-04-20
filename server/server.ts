@@ -14,6 +14,10 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../dist/views'));
 
 app.use('/', express.static(path.join(__dirname, '../dist/static')));
+app.use(
+  '/assets/sounds',
+  express.static(path.join(__dirname, '../assets/sounds'))
+);
 
 const manifest = fs.readFileSync(
   path.join(__dirname, '../dist/static/manifest.json'),
