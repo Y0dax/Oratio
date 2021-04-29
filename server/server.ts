@@ -10,17 +10,20 @@ import App from '../display/components/app';
 const app = express();
 
 app.set('view engine', 'ejs');
+// production bundle does not link the ejs module for some reason
+// eslint-disable-next-line no-underscore-dangle
+app.engine('ejs', require('ejs').__express);
 
-app.set('views', path.join(__dirname, '../dist/views'));
+app.set('views', path.join(__dirname, '../assets/dist/views'));
 
-app.use('/', express.static(path.join(__dirname, '../dist/static')));
+app.use('/', express.static(path.join(__dirname, '../assets/dist/static')));
 app.use(
   '/assets/sounds',
   express.static(path.join(__dirname, '../assets/sounds'))
 );
 
 const manifest = fs.readFileSync(
-  path.join(__dirname, '../dist/static/manifest.json'),
+  path.join(__dirname, '../assets/dist/static/manifest.json'),
   'utf-8'
 );
 
@@ -40,4 +43,4 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
-module.exports.server = server;
+export default server;

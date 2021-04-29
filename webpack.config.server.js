@@ -10,7 +10,7 @@ module.exports = {
   mode: 'development',
   devtool: 'source-map',
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'assets/dist'),
     filename: '[name].js',
   },
   externals: [nodeExternals()],

@@ -10,7 +10,7 @@ module.exports = {
   mode: 'development',
   devtool: 'source-map',
   output: {
-    path: path.resolve(`${__dirname}/dist/static`),
+    path: path.resolve(`${__dirname}/assets/dist/static`),
     filename: '[name].js',
     publicPath: '',
   },
