@@ -37,7 +37,7 @@ const useStyles = makeStyles(() =>
       display: 'table-cell',
       verticalAlign: 'bottom',
     }),
-    bubble: (props) => ({
+    bubble: (props: { bubbleColor: string }) => ({
       backgroundColor: props.bubbleColor,
       fontFamily: "'Baloo Da 2', cursive",
       padding: '20px',
@@ -54,8 +54,8 @@ const useStyles = makeStyles(() =>
 );
 
 // eslint-disable-next-line react/display-name
-const SpeechDisplay = React.forwardRef<HTMLSpanElement>((_props, ref) => {
-  const classes = useStyles();
+const SpeechDisplay = React.forwardRef<HTMLSpanElement>((_props, ref: any) => {
+  const classes = useStyles({ bubbleColor: ref.props.settings.bubbleColor });
   return <span ref={ref} className={classes.span} />;
 });
 
@@ -182,7 +182,9 @@ export default function App() {
         settings: data.settings,
       });
     });
-    return () => socket.disconnect();
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const classes = useStyles({ bubbleColor: state.settings.bubbleColor });

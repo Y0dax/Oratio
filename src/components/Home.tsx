@@ -105,7 +105,9 @@ export default function Home() {
   const socket = io('http://localhost:3000');
 
   useEffect(() => {
-    return () => socket.disconnect();
+    return () => {
+      socket.disconnect();
+    };
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
