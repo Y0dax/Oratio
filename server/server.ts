@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
+import uEmojiParser from 'universal-emoji-parser';
 import App from '../display/components/app';
 
 const app = express();
@@ -29,9 +30,29 @@ const manifest = fs.readFileSync(
 
 const assets = JSON.parse(manifest);
 
+// The request arg is not needed here but trips up lint and type checks
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 app.get('/', (req: express.Request, res: express.Response) => {
   const component = ReactDOMServer.renderToString(React.createElement(App));
   res.render('display', { assets, component });
+});
+
+// Client bundle throws a lot of errors attempting to package static emote libraries
+// The server node environment can handle the static files in the bundle
+app.get('/emotes', (req: express.Request, res: express.Response) => {
+  const emojiString = req.query.string;
+  const emojiElement = uEmojiParser.parse(emojiString);
+  let result = false;
+
+  if (emojiString !== emojiElement) {
+    result = true;
+  }
+
+  res.json({
+    value: emojiElement,
+    found: result,
+  });
 });
 
 const server = createServer(app);
