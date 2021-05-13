@@ -1,8 +1,10 @@
 const path = require('path');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
 const nodeExternals = require('webpack-node-externals');
 const CopyPlugin = require('copy-webpack-plugin');
 
-module.exports = {
+const serverConfig = {
   name: 'server',
   entry: {
     server: path.resolve(__dirname, 'server', 'server.ts'),
@@ -35,3 +37,36 @@ module.exports = {
     }),
   ],
 };
+
+const clientConfig = {
+  name: 'display',
+  entry: {
+    display: path.resolve(__dirname, 'display/display.tsx'),
+  },
+  mode: 'development',
+  devtool: 'source-map',
+  output: {
+    path: path.resolve(`${__dirname}/assets/dist/static`),
+    filename: '[name].js',
+    publicPath: '',
+  },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js'],
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        loader: 'babel-loader',
+      },
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader'],
+      },
+    ],
+  },
+  target: 'web',
+  plugins: [new CleanWebpackPlugin(), new WebpackManifestPlugin()],
+};
+
+module.exports = [clientConfig, serverConfig];
