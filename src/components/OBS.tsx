@@ -95,39 +95,39 @@ function SpeechPhrase(props: any) {
     speechDisplay.current.style.color = fontColor;
     speechDisplay.current.style.fontWeight = fontWeight;
 
+    // `i` is the message character index
     let i = 0;
     const typewriter = () => {
       if (i < message.length) {
-        speechSound.stop();
-        const charToFill = message.charAt(i);
-        const foundEmoji = emojis.find((emoji) => emoji.index === i);
-        let playSound = charToFill !== ' ';
+        // In cases of emoji's we might consume more characters at once
+        let charsConsumed = 1;
+        let charHTML = message.charAt(i);
 
         // Check any emoji identifiers and attempt to gather a related image
+        const foundEmoji = emojis.find((emoji) => emoji.index === i);
         if (foundEmoji) {
           const emojiString = foundEmoji[0];
-          i += emojiString.length;
-          const emojiElement = uEmojiParser.parse(emojiString);
-
+          const emojiHTML = uEmojiParser.parse(emojiString);
           // Parser returns input string if no emoji is found
-          if (emojiString !== emojiElement) {
-            speechDisplay.current.innerHTML += emojiElement;
-          } else {
-            playSound = false;
+          if (emojiString !== emojiHTML) {
+            charHTML = emojiHTML;
+            charsConsumed = emojiString.length;
           }
         }
+
         // TODO: the reference object is initialized as null but sometimes comes
         // through as null here even though it is mounted on the component
         // hack to bypass this but should figure out why
-        else if (speechDisplay.current) {
-          speechDisplay.current.innerHTML += charToFill;
+        if (speechDisplay.current) {
+          speechDisplay.current.innerHTML += charHTML;
         }
 
-        if (playSound) {
+        speechSound.stop();
+        if (charHTML !== ' ') {
           speechSound.play();
         }
-        // eslint-disable-next-line no-plusplus
-        i++;
+
+        i += charsConsumed;
         setTimeout(typewriter, timeBetweenChars);
       } else {
         setTimeout(() => {
