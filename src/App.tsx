@@ -7,6 +7,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import OBS from './components/OBS';
 import Preferences from './components/Preferences';
+import Emotes from './components/Emotes';
 import Home from './components/Home';
 import enTranslations from './translations/en';
 import jaTranslations from './translations/ja';
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="/home" component={Home} />
         <Route path="/obs" component={OBS} />
         <Route path="/preferences" component={Preferences} />
+        <Route path="/emotes" component={Emotes} />
       </Switch>
     </Router>
   );
