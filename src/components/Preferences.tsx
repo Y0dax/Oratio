@@ -82,6 +82,16 @@ export default function Preferences() {
               <Grid item xs={6}>
                 <BubbleBackgroundColorPicker />
               </Grid>
+              <Link to="/emotes" className={classes.link}>
+                <Button
+                  id="open-preferences"
+                  variant="contained"
+                  className={classes.button}
+                  color="primary"
+                >
+                  {t('Emotes')}
+                </Button>
+              </Link>
             </Grid>
             <Grid
               container
