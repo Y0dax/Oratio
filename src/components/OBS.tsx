@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, useReducer } from 'react';
+import ReactDOM from 'react-dom'
 
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Howl } from 'howler';
+import { Emote, emoteNameToUrl } from './Emotes';
 import uEmojiParser from 'universal-emoji-parser';
 
 const ipc = require('electron').ipcRenderer;
@@ -83,9 +85,10 @@ function SpeechPhrase(props: any) {
     src: [`../assets/sounds/${soundFileName}`],
     volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
   });
-  const regex = /:([^:]+):/g;
-  const emojis = [...message.matchAll(regex)];
   const timeBetweenChars: number = 150 - speed;
+  const emojiRegex = /:([^:]+):/g;
+  const emojis = [...message.matchAll(emojiRegex)].filter(e => uEmojiParser.parse(e[0]) != e[0]);
+  const emotes = [...message.matchAll(/\w+/g)].filter(e => e[0] in emoteNameToUrl);
 
   // Account for the time to print a message so it doesn't disappear early
   const timeout: number = message.length * timeBetweenChars + DEFAULT_TIMEOUT;
@@ -99,35 +102,38 @@ function SpeechPhrase(props: any) {
     let i = 0;
     const typewriter = () => {
       if (i < message.length) {
-        // In cases of emoji's we might consume more characters at once
-        let charsConsumed = 1;
-        let charHTML = message.charAt(i);
 
-        // Check any emoji identifiers and attempt to gather a related image
-        const foundEmoji = emojis.find((emoji) => emoji.index === i);
-        if (foundEmoji) {
-          const emojiString = foundEmoji[0];
-          const emojiHTML = uEmojiParser.parse(emojiString);
-          // Parser returns input string if no emoji is found
-          if (emojiString !== emojiHTML) {
-            charHTML = emojiHTML;
-            charsConsumed = emojiString.length;
-          }
+        speechSound.stop();
+        if (message.charAt(i) !== ' ') {
+          speechSound.play();
         }
 
         // TODO: the reference object is initialized as null but sometimes comes
         // through as null here even though it is mounted on the component
         // hack to bypass this but should figure out why
         if (speechDisplay.current) {
-          speechDisplay.current.innerHTML += charHTML;
+          // Check whether this character is the start of an emoji or emote.
+          const foundEmoji = emojis.find((emoji) => emoji.index === i);
+          const foundEmote = emotes.find((emote) => emote.index === i);
+          if (foundEmoji) {
+            const emojiString = foundEmoji[0];
+            const emojiHTML = uEmojiParser.parse(emojiString);
+            speechDisplay.current.innerHTML += message.charAt(i);
+            i += emojiString.length;
+          } else if (foundEmote) {
+            const emoteName = foundEmote[0];
+            const emoteContainer = document.createElement("span");
+            ReactDOM.render((<Emote emoteName={emoteName}></Emote>), emoteContainer);
+            speechDisplay.current.appendChild(emoteContainer);
+            i += emoteName.length;
+          } else {
+            // TODO: Doublecheck escaping.
+            speechDisplay.current.innerHTML += message.charAt(i);
+            i += 1;
+          }
         }
 
-        speechSound.stop();
-        if (charHTML !== ' ') {
-          speechSound.play();
-        }
 
-        i += charsConsumed;
         setTimeout(typewriter, timeBetweenChars);
       } else {
         setTimeout(() => {
