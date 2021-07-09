@@ -38,7 +38,7 @@ function scan_for_files(dir: string, return_prefix: string) {
 }
 for (const file of scan_for_files(assetLoc, assetLoc + '/')) {
   const emoteName = file.substr(file.lastIndexOf('/')+1).split('.')[0]
-  emoteNameToUrl[emoteName] = '../' + file;
+  emoteNameToUrl[emoteName] = '../' + escape(file);
 }
 console.log(emoteNameToUrl);
 
@@ -67,7 +67,7 @@ async function download(url, filePath) {
 
     // The destination stream is ended by the time it's called
     file.on('finish', () => {
-      const extension = fileInfo.mime.split('/')[1];
+      const extension = (fileInfo.mime || '/png').split('/')[1];
       const filePathWithExtension = filePath + '.' + extension;
       fs.renameSync(filePath, filePathWithExtension);
       console.log(`downloaded emote: ${url} -> ${filePath}`);
