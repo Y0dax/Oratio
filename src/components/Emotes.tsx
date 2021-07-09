@@ -17,8 +17,8 @@ const https = require('https');
 
 
 
-const emoteNameToUrl = {};
-export let lowercaseToEmoteName = {};
+export const emoteNameToUrl = {};
+export const lowercaseToEmoteName = {};
 
 const assetLoc =
   process.env.NODE_ENV === 'development'
@@ -33,7 +33,9 @@ function findFiles(dir: string, return_prefix: string) {
         files.push(f);
       }
     } else {
-      files.push(file);
+      if (file != '.DS_Store') {
+        files.push(file);
+      }
     }
   }
   return files.map(f => return_prefix + f);
@@ -158,10 +160,10 @@ const useStyles = makeStyles(() =>
     },
 
     emote: {
-      display: 'block',
+      display: 'inline-block',
       width: 'auto',
       height: 'auto',
-      'max-height': '3em',
+      'max-height': '2em',
       'max-width': '1000px',
     }
   })
