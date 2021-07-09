@@ -25,7 +25,7 @@ const useStyles = makeStyles(() =>
       color: 'white',
     },
     content: {
-      padding: theme.spacing(4),
+      margin: theme.spacing(4),
     },
     button: {
       padding: theme.spacing(2),

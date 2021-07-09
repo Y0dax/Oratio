@@ -52,7 +52,6 @@
              },
            },
            'css-loader',
-           'sass-loader'
          ],
        },
        // WOFF Font
