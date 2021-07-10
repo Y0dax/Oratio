@@ -119,7 +119,7 @@ export default function Home() {
   // Tab-complete
   let tabCompleteStart = 0;
   let tabCompletePrefixLow = '';
-  let tabCompleteOptions = [];
+  let tabCompleteOptions: string[] = [];
   let tabCompleteOptionIndex = 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function handleTabComplete(event: any) {

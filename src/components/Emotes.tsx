@@ -15,14 +15,14 @@ import * as Theme from './Theme';
 const fs = require('fs');
 const https = require('https');
 
-export const emoteNameToUrl = {};
-export const lowercaseToEmoteName = {};
+export const emoteNameToUrl: { [key: string]: string } = {};
+export const lowercaseToEmoteName: { [key: string]: string } = {};
 
 const assetLoc =
   process.env.NODE_ENV === 'development'
     ? 'assets/emotes'
     : 'resources/assets/emotes';
-function findFiles(dir: string, return_prefix: string) {
+function findFiles(dir: string, return_prefix: string): string[] {
   const files = [];
   for (const file of fs.readdirSync(dir)) {
     const stats = fs.statSync(`${dir}/${file}`);
@@ -37,7 +37,8 @@ function findFiles(dir: string, return_prefix: string) {
   return files.map((f) => return_prefix + f);
 }
 
-function clearObject(obj) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function clearObject(obj: any) {
   for (const k of Object.keys(obj)) {
     delete obj[k];
   }
@@ -47,7 +48,9 @@ function reloadEmotes() {
   clearObject(emoteNameToUrl);
   clearObject(lowercaseToEmoteName);
   for (const file of findFiles(assetLoc, `${assetLoc}/`)) {
-    const emoteName = file.substr(file.lastIndexOf('/') + 1).split('.')[0];
+    const emoteName: string = file
+      .substr(file.lastIndexOf('/') + 1)
+      .split('.')[0];
     emoteNameToUrl[emoteName] = `../${escape(file)}`;
     lowercaseToEmoteName[emoteName.toLowerCase()] = emoteName;
   }
@@ -58,12 +61,13 @@ reloadEmotes();
  * Downloads file from remote HTTPS host and puts its contents to the
  * specified location but adds the appropriate file extension from the MIME type.
  */
-async function download(url, filePath) {
+async function download(url: string, filePath: string) {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(filePath);
-    let fileInfo = null;
+    let fileInfo: { mime?: string; size?: number } = {};
 
-    const request = https.get(url, (response) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const request = https.get(url, (response: any) => {
       if (response.statusCode !== 200) {
         reject(new Error(`Failed to get '${url}' (${response.statusCode})`));
         return;
@@ -85,11 +89,13 @@ async function download(url, filePath) {
       resolve(filePathWithExtension);
     });
 
-    request.on('error', (err) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    request.on('error', (err: any) => {
       fs.unlink(filePath, () => reject(err));
     });
 
-    file.on('error', (err) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    file.on('error', (err: any) => {
       fs.unlink(filePath, () => reject(err));
     });
 
@@ -97,7 +103,7 @@ async function download(url, filePath) {
   });
 }
 
-function fixEmoteURL(url_: string) {
+function fixEmoteURL(url_: string): string {
   let url = url_;
   if (url.startsWith('//')) url = `https:${url}`;
   // upgrade resolution
@@ -113,7 +119,9 @@ x=JSON.stringify([...document.querySelectorAll('#all-emotes-group .group-header'
   emotes: Object.fromEntries([...g.querySelectorAll('.emote')].map(e => [e.getAttribute('data-emote'), e.querySelector('img').getAttribute('src')]))
 })))
 */
-async function fetchEmotes(emoteGroups) {
+async function fetchEmotes(
+  emoteGroups: { groupName: string; emotes: { [name: string]: string } }[]
+) {
   const fileInfoPromises = [];
   for (const group of emoteGroups) {
     const groupDir = `${assetLoc}/${group.groupName}`;
@@ -162,7 +170,7 @@ const useStyles = makeStyles(() =>
   })
 );
 
-export function Emote(attrs) {
+export function Emote(attrs: { emoteName: string }) {
   const { emoteName } = attrs;
   const classes = useStyles();
   if (emoteName in emoteNameToUrl) {
