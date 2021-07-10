@@ -18,6 +18,7 @@ const https = require('https');
 
 export const emoteNameToUrl: { [key: string]: string } = {};
 export const lowercaseToEmoteName: { [key: string]: string } = {};
+let asyncLoadingFinished = false;
 
 const assetLoc =
   process.env.NODE_ENV === 'development'
@@ -57,7 +58,11 @@ function reloadEmotes() {
     lowercaseToEmoteName[emoteName.toLowerCase()] = emoteName;
   }
 }
-reloadEmotes();
+async function reloadEmotesAsync() {
+  reloadEmotes();
+  asyncLoadingFinished = true;
+}
+reloadEmotesAsync();
 
 /**
  * Downloads file from remote HTTPS host and puts its contents to the
@@ -202,6 +207,10 @@ export default function Emotes() {
 
   function openEmoteDirectory() {
     openExplorer(assetLoc);
+  }
+
+  if (!asyncLoadingFinished) {
+    reloadEmotes();
   }
 
   const [, updateState] = React.useState<Record<string, never>>();
