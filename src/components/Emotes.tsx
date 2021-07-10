@@ -186,7 +186,6 @@ export function Emote(attrs: { emoteName: string }) {
   return <span>{emoteName}</span>;
 }
 
-
 export default function Emotes() {
   const classes = useStyles();
   const { t } = useTranslation();
@@ -197,8 +196,8 @@ export default function Emotes() {
 
   const [, updateState] = React.useState();
   const forceUpdate = React.useCallback(() => updateState({}), []);
-  function reloadEmotes_() {
-    reloadEmotes()
+  function reloadEmotesAndUpdate() {
+    reloadEmotes();
     forceUpdate();
   }
 
@@ -220,7 +219,7 @@ export default function Emotes() {
             variant="contained"
             className={classes.button}
             color="primary"
-            onClick={reloadEmotes_}
+            onClick={reloadEmotesAndUpdate}
           >
             {t('Reload emotes')}
           </Button>
@@ -228,14 +227,16 @@ export default function Emotes() {
           <h2>Emote preview</h2>
           <table>
             <tbody>
-              {Object.keys(emoteNameToUrl).sort().map((name: string) => (
-                <tr key={name}>
-                  <td>{name}</td>
-                  <td>
-                    <Emote emoteName={name} />
-                  </td>
-                </tr>
-              ))}
+              {Object.keys(emoteNameToUrl)
+                .sort()
+                .map((name: string) => (
+                  <tr key={name}>
+                    <td>{name}</td>
+                    <td>
+                      <Emote emoteName={name} />
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
           <Grid
