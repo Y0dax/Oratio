@@ -150,13 +150,13 @@ export default function Home() {
       tabCompleteStart = word.index;
       tabCompletePrefixLow = prefixLow;
       tabCompleteOptions = Object.entries(lowercaseToEmoteName)
-        .filter(([emoteLow, _]) => emoteLow.startsWith(prefixLow))
-        .map(([_, emoteName]) => `${emoteName} `);
+        .filter(([emoteLow]) => emoteLow.startsWith(prefixLow))
+        .map(([, emoteName]) => `${emoteName} `);
       if (tabCompleteOptions.length === 0) {
         // no prefix match found. try substring matching.
         tabCompleteOptions = Object.entries(lowercaseToEmoteName)
-          .filter(([emoteLow, _]) => emoteLow.indexOf(prefixLow) !== -1)
-          .map(([_, emoteName]) => `${emoteName} `);
+          .filter(([emoteLow]) => emoteLow.indexOf(prefixLow) !== -1)
+          .map(([, emoteName]) => `${emoteName} `);
       }
       tabCompleteOptions.sort();
       tabCompleteOptionIndex = 0;
