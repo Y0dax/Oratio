@@ -3,11 +3,8 @@ import React from 'react';
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { FormControl, InputLabel, MenuItem, Select } from '@material-ui/core';
 import { useTranslation } from 'react-i18next';
+import * as fs from 'fs';
 import * as Theme from '../Theme';
-
-// TODO not good to mix ES6 and ES5 syntax but standard import failed
-// should find a way to consolidate this
-const fs = require('fs');
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>

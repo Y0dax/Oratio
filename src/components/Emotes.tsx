@@ -9,12 +9,9 @@ import { Button, Grid } from '@material-ui/core';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import openExplorer from 'open-file-explorer';
+import * as https from 'https';
+import * as fs from 'fs';
 import * as Theme from './Theme';
-
-// TODO not good to mix ES6 and ES5 syntax but standard import failed
-// should find a way to consolidate this
-const fs = require('fs');
-const https = require('https');
 
 export const emoteNameToUrl: { [key: string]: string } = {};
 export const lowercaseToEmoteName: { [key: string]: string } = {};
@@ -70,7 +67,7 @@ reloadEmotesAsync();
  */
 async function startDownload(
   url: string,
-  agent: https.agent,
+  agent: https.Agent,
   filePath: string
 ): Promise<string> {
   return new Promise((resolve, reject) => {
