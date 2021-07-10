@@ -146,13 +146,23 @@ export default function Home() {
         .filter(([emoteLow, _]) => emoteLow.startsWith(prefixLow))
         .map(([_, emoteName]) => emoteName + ' ');
       if (tabCompleteOptions.length === 0) {
-        // console.log('no matching autocomplete options for: ', prefixLow);
-        return;
+        // no prefix match found. try substring matching.
+        tabCompleteOptions = Object.entries(lowercaseToEmoteName)
+          .filter(([emoteLow, _]) => emoteLow.indexOf(prefixLow) !== -1)
+          .map(([_, emoteName]) => emoteName + ' ');
       }
+      tabCompleteOptions.sort();
       tabCompleteOptionIndex = 0;
     } else {
-      tabCompleteOptionIndex = (tabCompleteOptionIndex+1) % tabCompleteOptions.length;
+      const optionCount = tabCompleteOptions.length;
+      tabCompleteOptionIndex = (tabCompleteOptionIndex+(event.shiftKey?-1:1) + optionCount) % optionCount;
     }
+
+    if (tabCompleteOptions.length === 0) {
+      // console.log('no matching autocomplete options for: ', prefixLow);
+      return;
+    }
+
     const option = tabCompleteOptions[tabCompleteOptionIndex];
     tabCompletePrefixLow = option.toLowerCase().slice(0, option.length-1);
     textField.value = text.slice(0, tabCompleteStart) + option + text.slice(selectionStart);
