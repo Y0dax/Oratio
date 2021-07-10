@@ -15,6 +15,8 @@ import { BrowserWindow, remote } from 'electron';
 import { useTranslation } from 'react-i18next';
 import * as Theme from './Theme';
 
+import {lowercaseToEmoteName} from './Emotes';
+
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
   createStyles({
@@ -61,7 +63,7 @@ const useStyles = makeStyles(() =>
 );
 
 let win: BrowserWindow | undefined;
-const handleOpenObs = async () => {
+async function handleOpenObs() {
   // electron.ipcRenderer.on();
   // BrowserWindow is just the type import, remote.BrowserWindow is the value
   // const win: BrowserWindow = new remote.BrowserWindow({ .. })
@@ -96,10 +98,10 @@ const handleOpenObs = async () => {
       win = undefined;
     });
   }
-};
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const handleSpeechSendClicked = async (event: any) => {
+async function handleSpeechSendClicked(event: any) {
   event.preventDefault();
   const { speech } = event.currentTarget.elements;
   // eslint-disable-next-line no-console
@@ -108,11 +110,55 @@ const handleSpeechSendClicked = async (event: any) => {
     win.webContents.send('speech', speech.value);
     speech.value = '';
   }
-};
+}
+
 
 export default function Home() {
   const classes = useStyles();
   const { t } = useTranslation();
+
+  // Tab-complete
+  let tabCompleteStart = 0;
+  let tabCompletePrefixLow = '';
+  let tabCompleteOptions = [];
+  let tabCompleteOptionIndex = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function handleTabComplete(event: any) {
+    if (event.key !== "Tab") return;
+    event.preventDefault();  // do not go to the next element.
+
+    const textField = event.target;
+    const text = textField.value;
+    const selectionStart = textField.selectionStart;
+    const words = [...text.matchAll(/\w+/g)].filter(word => word.index < selectionStart)
+    if (!words.length) {
+      // console.log('northing to autocomplete');
+      return;
+    }
+
+    const word = words[words.length-1];
+    const prefixLow = word[0].toLowerCase();
+    // Is this a different tab-complete than before?
+    if (!(word.index == tabCompleteStart && tabCompletePrefixLow.length && prefixLow.startsWith(tabCompletePrefixLow))) {
+      tabCompleteStart = word.index;
+      tabCompletePrefixLow = prefixLow;
+      tabCompleteOptions = Object.entries(lowercaseToEmoteName)
+        .filter(([emoteLow, _]) => emoteLow.startsWith(prefixLow))
+        .map(([_, emoteName]) => emoteName + ' ');
+      if (tabCompleteOptions.length === 0) {
+        // console.log('no matching autocomplete options for: ', prefixLow);
+        return;
+      }
+      tabCompleteOptionIndex = 0;
+    } else {
+      tabCompleteOptionIndex = (tabCompleteOptionIndex+1) % tabCompleteOptions.length;
+    }
+    const option = tabCompleteOptions[tabCompleteOptionIndex];
+    tabCompletePrefixLow = option.toLowerCase().slice(0, option.length-1);
+    textField.value = text.slice(0, tabCompleteStart) + option + text.slice(selectionStart);
+    textField.selectionStart = tabCompleteStart + option.length;
+  }
+
   return (
     <MuiThemeProvider theme={theme}>
       <div className={classes.root}>
@@ -129,6 +175,7 @@ export default function Home() {
                   id="speech-input"
                   label={t('Speech')}
                   variant="outlined"
+                  onKeyDown={handleTabComplete}
                   fullWidth
                   autoFocus
                 />

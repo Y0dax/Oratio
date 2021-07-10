@@ -49,6 +49,7 @@ function reloadEmotes() {
   for (const file of findFiles(assetLoc, `${assetLoc}/`)) {
     const emoteName = file.substr(file.lastIndexOf('/') + 1).split('.')[0];
     emoteNameToUrl[emoteName] = `../${escape(file)}`;
+    lowercaseToEmoteName[emoteName.toLowerCase()] = emoteName;
   }
 }
 reloadEmotes();
