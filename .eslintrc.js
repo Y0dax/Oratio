@@ -12,8 +12,8 @@ module.exports = {
     //   },
     // ],
     'no-restricted-syntax': [
+      // Allow ForOfStatement as it's useful and the reason for exclusion doesn't apply.
       'error',
-      // Remove ForOfStatement as it's useful and the reason for exclusion doesn't apply.
       {
         selector: 'ForInStatement',
         message:
