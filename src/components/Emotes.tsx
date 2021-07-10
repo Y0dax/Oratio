@@ -203,7 +203,7 @@ export default function Emotes() {
     openExplorer(assetLoc);
   }
 
-  const [, updateState] = React.useState<{}>();
+  const [, updateState] = React.useState<Record<string, never>>();
   const forceUpdate = React.useCallback(() => updateState({}), []);
   function reloadEmotesAndUpdate() {
     reloadEmotes();
