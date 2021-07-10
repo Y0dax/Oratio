@@ -114,25 +114,31 @@ function fixEmoteURL(url_: string): string {
   return url;
 }
 
-/*
-Was generated from a twitch page using this:
-x=JSON.stringify([...document.querySelectorAll('#all-emotes-group .group-header')].map(g => ({groupName: g.getAttribute('data-emote-channel'),
+const emoteScrapeScript = `
+button = document.createElement('button'); document.body.append(button); button.innerText = "copy emotes"; button.style = "display: float; width:100px; height:100px; background-color: cornflowerblue; z-index: 1000000; text-align: center; border-radius:10px";
+button.onclick = () => { navigator.clipboard.writeText(JSON.stringify([...document.querySelectorAll('#all-emotes-group .group-header')].map(g => ({groupName: g.getAttribute('data-emote-channel'),
   emotes: Object.fromEntries([...g.querySelectorAll('.emote')].map(e => [e.getAttribute('data-emote'), e.querySelector('img').getAttribute('src')]))
-})))
-*/
+}))));
+button.innerText="emotes copied!"
+};`;
+
 async function fetchEmotes(
   emoteGroups: { groupName: string; emotes: { [name: string]: string } }[]
 ) {
-  const fileInfoPromises = [];
+  const promises = [];
   for (const group of emoteGroups) {
     const groupDir = `${assetLoc}/${group.groupName}`;
     fs.mkdirSync(groupDir, { recursive: true });
     for (const [name, url] of Object.entries(group.emotes)) {
       const filePath = `${groupDir}/${name}`;
-      fileInfoPromises.push(download(fixEmoteURL(url), filePath));
+      if (url === '') {
+        console.warn('emote missing url: ', name);
+        continue;
+      }
+      promises.push(download(fixEmoteURL(url), filePath));
     }
   }
-  await Promise.all(fileInfoPromises);
+  return promises;
 }
 
 const theme = Theme.default();
@@ -153,6 +159,7 @@ const useStyles = makeStyles(() =>
     button: {
       padding: theme.spacing(2),
       textAlign: 'center',
+      margin: '5px',
     },
     link: {
       textDecoration: 'none',
@@ -201,10 +208,41 @@ export default function Emotes() {
     forceUpdate();
   }
 
+  const [copyScriptButtonTitle, setCopyScriptButtonTitle] = React.useState<string>(t('Copy Code'), t('Copy Code'));
+  function copyEmoteScrapeScript() {
+    navigator.clipboard.writeText(emoteScrapeScript);
+    setCopyScriptButtonTitle(t('Code Copied!'));
+  }
+
+
+  const [importState, setImportState] = React.useState<string>('', '');
+  async function importEmotesFromClipboard() {
+    try {
+      setImportState('import started');
+      const promises = await fetchEmotes(JSON.parse(await navigator.clipboard.readText()));
+      let numFinished = 0;
+      function progressUpdate(message: string) {
+        setImportState(`[${numFinished}/${promises.length}] ${message}`);
+      }
+      progressUpdate('Started downloads!');
+      await Promise.all(promises.map(p => p.then((filePathWithExtension) => {
+        numFinished += 1;
+        progressUpdate(filePathWithExtension);
+      })))
+      progressUpdate('Done!');
+    } catch(err) {
+      setImportState('error: ' + err);
+      throw err;
+    }
+    reloadEmotesAndUpdate();
+  }
+
   const element = (
     <MuiThemeProvider theme={theme}>
       <div className={classes.root}>
         <div className={classes.content}>
+          <h2>Emote Tools</h2>
+
           <Button
             id="open-emote-directory"
             variant="contained"
@@ -223,6 +261,46 @@ export default function Emotes() {
           >
             {t('Reload emotes')}
           </Button>
+
+          <h2>Importing emotes</h2>
+          <div>
+            You can import/manage emotes manually using the buttons above and placing images into that directory.
+          </div>
+          <div>
+            To import existing Twitch/BTTV/FFZ emotes you can do the following:
+            <ol>
+              <li> Install BTTV in your browser if you haven't already. </li>
+              <li> Open your twitch channel page with chat. </li>
+              <li> Open the browser console: Browser menu &gt; More Tools &gt; Web Developer Tools &gt; "Console" tab </li>
+              <li> Note that pasting code into the browser console is not normal and you should trust or verify the script. See <a href="https://en.wikipedia.org/wiki/Self-XSS">Self-XSS</a> for more info. </li>
+              <li> Click this button:
+                <Button
+                  id="script-copy"
+                  variant="contained"
+                  className={classes.button}
+                  color="primary"
+                  onClick={copyEmoteScrapeScript}
+                  >
+                    {copyScriptButtonTitle}
+                  </Button>
+              </li>
+              <li> If you trust the script, paste it in the console and hit enter. </li>
+              <li> A "Copy emotes" button should have appeared on your twitch stream. Click it. </li>
+              <li> Your clipboard should now contain a JSON string with emote groups. </li>
+              <li> Click this button:
+                <Button
+                    id="open-preferences"
+                    variant="contained"
+                    className={classes.button}
+                    color="primary"
+                    onClick={importEmotesFromClipboard}
+                  >
+                  {t('Import Emotes')}
+                </Button>
+                <span>{importState}</span>
+              </li>
+            </ol>
+          </div>
 
           <h2>Emote preview</h2>
           <table>
