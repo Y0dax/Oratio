@@ -15,8 +15,6 @@ import * as Theme from './Theme';
 const fs = require('fs');
 const https = require('https');
 
-
-
 export const emoteNameToUrl = {};
 export const lowercaseToEmoteName = {};
 
@@ -27,18 +25,16 @@ const assetLoc =
 function findFiles(dir: string, return_prefix: string) {
   const files = [];
   for (const file of fs.readdirSync(dir)) {
-    const stats = fs.statSync(dir + '/' + file);
+    const stats = fs.statSync(`${dir}/${file}`);
     if (stats.isDirectory()) {
-      for (const f of findFiles(dir + '/' + file, file+'/')) {
+      for (const f of findFiles(`${dir}/${file}`, `${file}/`)) {
         files.push(f);
       }
-    } else {
-      if (file != '.DS_Store') {
-        files.push(file);
-      }
+    } else if (file != '.DS_Store') {
+      files.push(file);
     }
   }
-  return files.map(f => return_prefix + f);
+  return files.map((f) => return_prefix + f);
 }
 
 function clearObject(obj) {
@@ -50,15 +46,13 @@ function clearObject(obj) {
 function reloadEmotes() {
   clearObject(emoteNameToUrl);
   clearObject(lowercaseToEmoteName);
-  for (const file of findFiles(assetLoc, assetLoc + '/')) {
-    const emoteName = file.substr(file.lastIndexOf('/')+1).split('.')[0]
-    emoteNameToUrl[emoteName] = '../' + escape(file);
+  for (const file of findFiles(assetLoc, `${assetLoc}/`)) {
+    const emoteName = file.substr(file.lastIndexOf('/') + 1).split('.')[0];
+    emoteNameToUrl[emoteName] = `../${escape(file)}`;
   }
   console.log(emoteNameToUrl);
 }
 reloadEmotes();
-
-
 
 /**
  * Downloads file from remote HTTPS host and puts its contents to the
@@ -69,7 +63,7 @@ async function download(url, filePath) {
     const file = fs.createWriteStream(filePath);
     let fileInfo = null;
 
-    const request = https.get(url, response => {
+    const request = https.get(url, (response) => {
       if (response.statusCode !== 200) {
         reject(new Error(`Failed to get '${url}' (${response.statusCode})`));
         return;
@@ -86,17 +80,17 @@ async function download(url, filePath) {
     // The destination stream is ended by the time it's called
     file.on('finish', () => {
       const extension = (fileInfo.mime || '/png').split('/')[1];
-      const filePathWithExtension = filePath + '.' + extension;
+      const filePathWithExtension = `${filePath}.${extension}`;
       fs.renameSync(filePath, filePathWithExtension);
       console.log(`downloaded emote: ${url} -> ${filePath}`);
       resolve(filePathWithExtension);
     });
 
-    request.on('error', err => {
+    request.on('error', (err) => {
       fs.unlink(filePath, () => reject(err));
     });
 
-    file.on('error', err => {
+    file.on('error', (err) => {
       fs.unlink(filePath, () => reject(err));
     });
 
@@ -105,7 +99,7 @@ async function download(url, filePath) {
 }
 
 function fix_emote_url(url) {
-  if (url.startsWith('//')) url = 'https:' + url;
+  if (url.startsWith('//')) url = `https:${url}`;
   // upgrade resolution
   url = url.replace(/\/2x$/i, '/3x');
   url = url.replace(/\/2\.0$/i, '/3.0');
@@ -120,12 +114,12 @@ x=JSON.stringify([...document.querySelectorAll('#all-emotes-group .group-header'
 })))
 */
 async function fetchEmotes(emoteGroups) {
-  const fileInfoPromises = []
+  const fileInfoPromises = [];
   for (const group of emoteGroups) {
-    const groupDir = assetLoc + '/' + group.groupName;
-    fs.mkdirSync(groupDir, {recursive: true});
+    const groupDir = `${assetLoc}/${group.groupName}`;
+    fs.mkdirSync(groupDir, { recursive: true });
     for (const [name, url] of Object.entries(group.emotes)) {
-      const filePath = groupDir + '/' + name;
+      const filePath = `${groupDir}/${name}`;
       fileInfoPromises.push(download(fix_emote_url(url), filePath));
     }
   }
@@ -141,8 +135,7 @@ const useStyles = makeStyles(() =>
       color: 'white',
       padding: theme.spacing(4),
     },
-    content: {
-    },
+    content: {},
     text: {
       color: 'white',
       fontSize: '3rem',
@@ -165,23 +158,18 @@ const useStyles = makeStyles(() =>
       height: 'auto',
       'max-height': '2em',
       'max-width': '1000px',
-    }
+    },
   })
 );
 
 export function Emote(attrs) {
-  const {emoteName} = attrs;
+  const { emoteName } = attrs;
   const classes = useStyles();
   if (emoteName in emoteNameToUrl) {
-    return (
-      <img src={emoteNameToUrl[emoteName]} className={classes.emote} />
-    );
-  } else {
-    console.log(emoteName);
-    return (
-      <span>{emoteName}</span>
-    );
+    return <img src={emoteNameToUrl[emoteName]} className={classes.emote} />;
   }
+  console.log(emoteName);
+  return <span>{emoteName}</span>;
 }
 
 export default function Emotes() {
@@ -198,7 +186,7 @@ export default function Emotes() {
                 <tr key={name}>
                   <td>{name}</td>
                   <td>
-                    <Emote emoteName={name}></Emote>
+                    <Emote emoteName={name} />
                   </td>
                 </tr>
               ))}

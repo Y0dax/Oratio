@@ -1,10 +1,10 @@
 import React, { useRef, useEffect, useReducer } from 'react';
-import ReactDOM from 'react-dom'
+import ReactDOM from 'react-dom';
 
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Howl } from 'howler';
-import { Emote, emoteNameToUrl } from './Emotes';
 import uEmojiParser from 'universal-emoji-parser';
+import { Emote, emoteNameToUrl } from './Emotes';
 
 const ipc = require('electron').ipcRenderer;
 
@@ -87,8 +87,12 @@ function SpeechPhrase(props: any) {
   });
   const timeBetweenChars: number = 150 - speed;
   const emojiRegex = /:([^:]+):/g;
-  const emojis = [...message.matchAll(emojiRegex)].filter(e => uEmojiParser.parse(e[0]) != e[0]);
-  const emotes = [...message.matchAll(/\w+/g)].filter(e => e[0] in emoteNameToUrl);
+  const emojis = [...message.matchAll(emojiRegex)].filter(
+    (e) => uEmojiParser.parse(e[0]) != e[0]
+  );
+  const emotes = [...message.matchAll(/\w+/g)].filter(
+    (e) => e[0] in emoteNameToUrl
+  );
 
   // Account for the time to print a message so it doesn't disappear early
   const timeout: number = message.length * timeBetweenChars + DEFAULT_TIMEOUT;
@@ -102,7 +106,6 @@ function SpeechPhrase(props: any) {
     let i = 0;
     const typewriter = () => {
       if (i < message.length) {
-
         speechSound.stop();
         if (message.charAt(i) !== ' ') {
           speechSound.play();
@@ -122,8 +125,8 @@ function SpeechPhrase(props: any) {
             i += emojiString.length;
           } else if (foundEmote) {
             const emoteName = foundEmote[0];
-            const emoteContainer = document.createElement("span");
-            ReactDOM.render((<Emote emoteName={emoteName}></Emote>), emoteContainer);
+            const emoteContainer = document.createElement('span');
+            ReactDOM.render(<Emote emoteName={emoteName} />, emoteContainer);
             speechDisplay.current.appendChild(emoteContainer);
             i += emoteName.length;
           } else {
@@ -132,7 +135,6 @@ function SpeechPhrase(props: any) {
             i += 1;
           }
         }
-
 
         setTimeout(typewriter, timeBetweenChars);
       } else {
