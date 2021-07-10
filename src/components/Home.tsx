@@ -15,7 +15,7 @@ import { BrowserWindow, remote } from 'electron';
 import { useTranslation } from 'react-i18next';
 import * as Theme from './Theme';
 
-import {lowercaseToEmoteName} from './Emotes';
+import { lowercaseToEmoteName } from './Emotes';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -112,7 +112,6 @@ async function handleSpeechSendClicked(event: any) {
   }
 }
 
-
 export default function Home() {
   const classes = useStyles();
   const { t } = useTranslation();
@@ -124,38 +123,48 @@ export default function Home() {
   let tabCompleteOptionIndex = 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function handleTabComplete(event: any) {
-    if (event.key !== "Tab") return;
-    event.preventDefault();  // do not go to the next element.
+    if (event.key !== 'Tab') return;
+    event.preventDefault(); // do not go to the next element.
 
     const textField = event.target;
     const text = textField.value;
-    const selectionStart = textField.selectionStart;
-    const words = [...text.matchAll(/\w+/g)].filter(word => word.index < selectionStart)
+    const { selectionStart } = textField;
+    const words = [...text.matchAll(/\w+/g)].filter(
+      (word) => word.index < selectionStart
+    );
     if (!words.length) {
       // console.log('northing to autocomplete');
       return;
     }
 
-    const word = words[words.length-1];
+    const word = words[words.length - 1];
     const prefixLow = word[0].toLowerCase();
-    // Is this a different tab-complete than before?
-    if (!(word.index == tabCompleteStart && tabCompletePrefixLow.length && prefixLow.startsWith(tabCompletePrefixLow))) {
+    if (
+      // Is this a different tab-complete than before?
+      !(
+        word.index === tabCompleteStart &&
+        tabCompletePrefixLow.length &&
+        prefixLow.startsWith(tabCompletePrefixLow)
+      )
+    ) {
       tabCompleteStart = word.index;
       tabCompletePrefixLow = prefixLow;
       tabCompleteOptions = Object.entries(lowercaseToEmoteName)
         .filter(([emoteLow, _]) => emoteLow.startsWith(prefixLow))
-        .map(([_, emoteName]) => emoteName + ' ');
+        .map(([_, emoteName]) => `${emoteName} `);
       if (tabCompleteOptions.length === 0) {
         // no prefix match found. try substring matching.
         tabCompleteOptions = Object.entries(lowercaseToEmoteName)
           .filter(([emoteLow, _]) => emoteLow.indexOf(prefixLow) !== -1)
-          .map(([_, emoteName]) => emoteName + ' ');
+          .map(([_, emoteName]) => `${emoteName} `);
       }
       tabCompleteOptions.sort();
       tabCompleteOptionIndex = 0;
     } else {
       const optionCount = tabCompleteOptions.length;
-      tabCompleteOptionIndex = (tabCompleteOptionIndex+(event.shiftKey?-1:1) + optionCount) % optionCount;
+      tabCompleteOptionIndex =
+        (tabCompleteOptionIndex + (event.shiftKey ? -1 : 1) + optionCount) %
+        optionCount;
     }
 
     if (tabCompleteOptions.length === 0) {
@@ -164,8 +173,9 @@ export default function Home() {
     }
 
     const option = tabCompleteOptions[tabCompleteOptionIndex];
-    tabCompletePrefixLow = option.toLowerCase().slice(0, option.length-1);
-    textField.value = text.slice(0, tabCompleteStart) + option + text.slice(selectionStart);
+    tabCompletePrefixLow = option.toLowerCase().slice(0, option.length - 1);
+    textField.value =
+      text.slice(0, tabCompleteStart) + option + text.slice(selectionStart);
     textField.selectionStart = tabCompleteStart + option.length;
   }
 

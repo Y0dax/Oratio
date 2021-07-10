@@ -11,6 +11,7 @@ module.exports = {
     //     "code": 400,
     //   },
     // ],
+    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     'no-restricted-syntax': [
       // Allow ForOfStatement as it's useful and the reason for exclusion doesn't apply.
       'error',
