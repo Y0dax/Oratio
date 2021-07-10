@@ -11,6 +11,25 @@ module.exports = {
     //     "code": 400,
     //   },
     // ],
+    'no-restricted-syntax': [
+      'error',
+      // Remove ForOfStatement as it's useful and the reason for exclusion doesn't apply.
+      {
+        selector: 'ForInStatement',
+        message:
+          'for..in loops iterate over the entire prototype chain, which is virtually never what you want. Use Object.{keys,values,entries}, and iterate over the resulting array.',
+      },
+      {
+        selector: 'LabeledStatement',
+        message:
+          'Labels are a form of GOTO; using them makes code confusing and hard to maintain and understand.',
+      },
+      {
+        selector: 'WithStatement',
+        message:
+          '`with` is disallowed in strict mode because it makes code impossible to predict and optimize.',
+      },
+    ],
   },
   plugins: ['prettier'],
   parserOptions: {
