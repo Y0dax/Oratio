@@ -68,13 +68,17 @@ reloadEmotesAsync();
  * Downloads file from remote HTTPS host and puts its contents to the
  * specified location but adds the appropriate file extension from the MIME type.
  */
-async function startDownload(url: string, agent: https.agent, filePath: string): Promise<string> {
+async function startDownload(
+  url: string,
+  agent: https.agent,
+  filePath: string
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(filePath);
     let fileInfo: { mime?: string; size?: number } = {};
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const request = https.get(url, {agent}, (response: any) => {
+    const request = https.get(url, { agent }, (response: any) => {
       if (response.statusCode !== 200) {
         reject(new Error(`Failed to get '${url}' (${response.statusCode})`));
         return;
@@ -133,7 +137,7 @@ async function fetchEmotes(
   emoteGroups: { groupName: string; emotes: { [name: string]: string } }[]
 ): Promise<Promise<string>[]> {
   const promises = [];
-  const agent = new https.Agent({maxSockets: 25});
+  const agent = new https.Agent({ maxSockets: 25 });
   for (const group of emoteGroups) {
     const groupDir = `${assetLoc}/${group.groupName}`;
     fs.mkdirSync(groupDir, { recursive: true });
