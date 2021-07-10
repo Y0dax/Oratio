@@ -48,6 +48,7 @@ function clearObject(obj: any) {
 function reloadEmotes() {
   clearObject(emoteNameToUrl);
   clearObject(lowercaseToEmoteName);
+  fs.mkdirSync(assetLoc, {recursive: true});
   for (const file of findFiles(assetLoc, `${assetLoc}/`)) {
     const emoteName: string = file
       .substr(file.lastIndexOf('/') + 1)
