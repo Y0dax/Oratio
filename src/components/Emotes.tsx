@@ -115,7 +115,8 @@ function fixEmoteURL(url_: string): string {
 }
 
 const emoteScrapeScript = `
-button = document.createElement('button'); document.body.append(button); button.innerText = "copy emotes"; button.style = "display: float; width:100px; height:100px; background-color: cornflowerblue; z-index: 1000000; text-align: center; border-radius:10px";
+button = document.createElement('button'); document.body.append(button); button.innerText = "copy emotes";
+button.style = "display: float; width:100px; height:100px; background-color: cornflowerblue; z-index: 1000000; text-align: center; border-radius:10px";
 button.onclick = () => { navigator.clipboard.writeText(JSON.stringify([...document.querySelectorAll('#all-emotes-group .group-header')].map(g => ({groupName: g.getAttribute('data-emote-channel'),
   emotes: Object.fromEntries([...g.querySelectorAll('.emote')].map(e => [e.getAttribute('data-emote'), e.querySelector('img').getAttribute('src')]))
 }))));
@@ -131,11 +132,12 @@ async function fetchEmotes(
     fs.mkdirSync(groupDir, { recursive: true });
     for (const [name, url] of Object.entries(group.emotes)) {
       const filePath = `${groupDir}/${name}`;
-      if (url === '') {
+      if (url) {
+        promises.push(download(fixEmoteURL(url), filePath));
+      } else {
+        // eslint-disable-next-line no-console
         console.warn('emote missing url: ', name);
-        continue;
       }
-      promises.push(download(fixEmoteURL(url), filePath));
     }
   }
   return promises;
@@ -208,30 +210,38 @@ export default function Emotes() {
     forceUpdate();
   }
 
-  const [copyScriptButtonTitle, setCopyScriptButtonTitle] = React.useState<string>(t('Copy Code'), t('Copy Code'));
+  const [copyScriptButtonTitle, setCopyScriptButtonTitle] = React.useState<
+    string
+  >(t('Copy Code'), t('Copy Code'));
   function copyEmoteScrapeScript() {
     navigator.clipboard.writeText(emoteScrapeScript);
     setCopyScriptButtonTitle(t('Code Copied!'));
   }
 
-
   const [importState, setImportState] = React.useState<string>('', '');
   async function importEmotesFromClipboard() {
     try {
       setImportState('import started');
-      const promises = await fetchEmotes(JSON.parse(await navigator.clipboard.readText()));
+      const promises = await fetchEmotes(
+        JSON.parse(await navigator.clipboard.readText())
+      );
       let numFinished = 0;
-      function progressUpdate(message: string) {
+      const progressUpdate = (message: string) => {
         setImportState(`[${numFinished}/${promises.length}] ${message}`);
-      }
+      };
       progressUpdate('Started downloads!');
-      await Promise.all(promises.map(p => p.then((filePathWithExtension) => {
-        numFinished += 1;
-        progressUpdate(filePathWithExtension);
-      })))
+      await Promise.all(
+        promises.map((p) =>
+          p.then((filePathWithExtension) => {
+            numFinished += 1;
+            progressUpdate(filePathWithExtension);
+            return null;
+          })
+        )
+      );
       progressUpdate('Done!');
-    } catch(err) {
-      setImportState('error: ' + err);
+    } catch (err) {
+      setImportState(`error: ${err}`);
       throw err;
     }
     reloadEmotesAndUpdate();
@@ -264,37 +274,59 @@ export default function Emotes() {
 
           <h2>Importing emotes</h2>
           <div>
-            You can import/manage emotes manually using the buttons above and placing images into that directory.
+            You can import/manage emotes manually using the buttons above and
+            placing images into that directory.
           </div>
           <div>
             To import existing Twitch/BTTV/FFZ emotes you can do the following:
             <ol>
-              <li> Install BTTV in your browser if you haven't already. </li>
+              <li>
+                {' '}
+                Install BTTV in your browser if you haven&rsquo;t already.{' '}
+              </li>
               <li> Open your twitch channel page with chat. </li>
-              <li> Open the browser console: Browser menu &gt; More Tools &gt; Web Developer Tools &gt; "Console" tab </li>
-              <li> Note that pasting code into the browser console is not normal and you should trust or verify the script. See <a href="https://en.wikipedia.org/wiki/Self-XSS">Self-XSS</a> for more info. </li>
-              <li> Click this button:
+              <li>
+                Open the browser console: Browser menu &gt; More Tools &gt; Web
+                Developer Tools &gt; &rdquo;Console&rdquo; tab
+              </li>
+              <li>
+                Note that pasting code into the browser console is not normal
+                and you should trust or verify the script. See
+                <a href="https://en.wikipedia.org/wiki/Self-XSS">Self-XSS</a>
+                for more info.
+              </li>
+              <li>
+                Click this button:
                 <Button
                   id="script-copy"
                   variant="contained"
                   className={classes.button}
                   color="primary"
                   onClick={copyEmoteScrapeScript}
-                  >
-                    {copyScriptButtonTitle}
-                  </Button>
+                >
+                  {copyScriptButtonTitle}
+                </Button>
               </li>
-              <li> If you trust the script, paste it in the console and hit enter. </li>
-              <li> A "Copy emotes" button should have appeared on your twitch stream. Click it. </li>
-              <li> Your clipboard should now contain a JSON string with emote groups. </li>
-              <li> Click this button:
+              <li>
+                If you trust the script, paste it in the console and hit enter.
+              </li>
+              <li>
+                A &rdquo;Copy emotes&rdquo; button should have appeared on your
+                twitch stream. Click it.
+              </li>
+              <li>
+                Your clipboard should now contain a JSON string with emote
+                groups.
+              </li>
+              <li>
+                Click this button:
                 <Button
-                    id="open-preferences"
-                    variant="contained"
-                    className={classes.button}
-                    color="primary"
-                    onClick={importEmotesFromClipboard}
-                  >
+                  id="open-preferences"
+                  variant="contained"
+                  className={classes.button}
+                  color="primary"
+                  onClick={importEmotesFromClipboard}
+                >
                   {t('Import Emotes')}
                 </Button>
                 <span>{importState}</span>
