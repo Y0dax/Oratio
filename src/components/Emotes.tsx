@@ -222,14 +222,19 @@ export default function Emotes() {
   async function importEmotesFromClipboard() {
     try {
       setImportState('import started');
+      const emoteGroups = JSON.parse(await navigator.clipboard.readText());
       const promises = await fetchEmotes(
-        JSON.parse(await navigator.clipboard.readText())
+        emoteGroups
       );
+      if (promises.length === 0) {
+        setImportState('Did you forget step 3? JSON loaded but no emotes found.');
+        return;
+      }
       let numFinished = 0;
       const progressUpdate = (message: string) => {
         setImportState(`[${numFinished}/${promises.length}] ${message}`);
       };
-      progressUpdate('Started downloads!');
+      progressUpdate('Started downloads...');
       await Promise.all(
         promises.map((p) =>
           p.then((filePathWithExtension: string) => {
@@ -285,6 +290,7 @@ export default function Emotes() {
                 Install BTTV in your browser if you haven&rsquo;t already.{' '}
               </li>
               <li> Open your twitch channel page with chat. </li>
+              <li> Open the BTTV emote panel to the left of the &rdquo;Chat&rdquo; Button and scroll though to load all the emotes. </li>
               <li>
                 Open the browser console: Browser menu &gt; More Tools &gt; Web
                 Developer Tools &gt; &rdquo;Console&rdquo; tab
