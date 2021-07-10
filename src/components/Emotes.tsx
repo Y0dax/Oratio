@@ -297,7 +297,7 @@ export default function Emotes() {
               <li>
                 Note that pasting code into the browser console is not normal
                 and you should trust or verify the script. See
-                <a href="https://en.wikipedia.org/wiki/Self-XSS">Self-XSS</a>
+                {' '}<a href="https://en.wikipedia.org/wiki/Self-XSS" target="_blank">Self-XSS</a>{' '}
                 for more info.
               </li>
               <li>
