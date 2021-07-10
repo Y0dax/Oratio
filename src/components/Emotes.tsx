@@ -8,6 +8,7 @@ import {
 import { Button, Grid } from '@material-ui/core';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import openExplorer from 'open-file-explorer';
 import * as Theme from './Theme';
 
 // TODO not good to mix ES6 and ES5 syntax but standard import failed
@@ -185,17 +186,49 @@ export function Emote(attrs: { emoteName: string }) {
   return <span>{emoteName}</span>;
 }
 
+
 export default function Emotes() {
   const classes = useStyles();
   const { t } = useTranslation();
-  return (
+
+  function openEmoteDirectory() {
+    openExplorer(assetLoc);
+  }
+
+  const [, updateState] = React.useState();
+  const forceUpdate = React.useCallback(() => updateState({}), []);
+  function reloadEmotes_() {
+    reloadEmotes()
+    forceUpdate();
+  }
+
+  const element = (
     <MuiThemeProvider theme={theme}>
       <div className={classes.root}>
         <div className={classes.content}>
+          <Button
+            id="open-emote-directory"
+            variant="contained"
+            className={classes.button}
+            color="primary"
+            onClick={openEmoteDirectory}
+          >
+            {t('Open Emote Directory')}
+          </Button>
+          <Button
+            id="reload-emotes"
+            variant="contained"
+            className={classes.button}
+            color="primary"
+            onClick={reloadEmotes_}
+          >
+            {t('Reload emotes')}
+          </Button>
+
           <h2>Emote preview</h2>
           <table>
             <tbody>
-              {Object.keys(emoteNameToUrl).map((name: string) => (
+              {Object.keys(emoteNameToUrl).sort().map((name: string) => (
                 <tr key={name}>
                   <td>{name}</td>
                   <td>
@@ -228,4 +261,5 @@ export default function Emotes() {
       </div>
     </MuiThemeProvider>
   );
+  return element;
 }
