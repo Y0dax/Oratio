@@ -62,7 +62,7 @@ reloadEmotes();
  * Downloads file from remote HTTPS host and puts its contents to the
  * specified location but adds the appropriate file extension from the MIME type.
  */
-async function download(url: string, filePath: string) {
+async function download(url: string, filePath: string) : Promise<string> {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(filePath);
     let fileInfo: { mime?: string; size?: number } = {};
@@ -125,7 +125,7 @@ button.innerText="emotes copied!"
 
 async function fetchEmotes(
   emoteGroups: { groupName: string; emotes: { [name: string]: string } }[]
-) {
+): Promise<Promise<string>[]> {
   const promises = [];
   for (const group of emoteGroups) {
     const groupDir = `${assetLoc}/${group.groupName}`;
@@ -203,7 +203,7 @@ export default function Emotes() {
     openExplorer(assetLoc);
   }
 
-  const [, updateState] = React.useState();
+  const [, updateState] = React.useState<{}>();
   const forceUpdate = React.useCallback(() => updateState({}), []);
   function reloadEmotesAndUpdate() {
     reloadEmotes();
@@ -212,13 +212,13 @@ export default function Emotes() {
 
   const [copyScriptButtonTitle, setCopyScriptButtonTitle] = React.useState<
     string
-  >(t('Copy Code'), t('Copy Code'));
+  >(t('Copy Code'));
   function copyEmoteScrapeScript() {
     navigator.clipboard.writeText(emoteScrapeScript);
     setCopyScriptButtonTitle(t('Code Copied!'));
   }
 
-  const [importState, setImportState] = React.useState<string>('', '');
+  const [importState, setImportState] = React.useState<string>('');
   async function importEmotesFromClipboard() {
     try {
       setImportState('import started');
@@ -232,7 +232,7 @@ export default function Emotes() {
       progressUpdate('Started downloads!');
       await Promise.all(
         promises.map((p) =>
-          p.then((filePathWithExtension) => {
+          p.then((filePathWithExtension: string) => {
             numFinished += 1;
             progressUpdate(filePathWithExtension);
             return null;
