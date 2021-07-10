@@ -49,7 +49,7 @@ function clearObject(obj: any) {
 function reloadEmotes() {
   clearObject(emoteNameToUrl);
   clearObject(lowercaseToEmoteName);
-  fs.mkdirSync(assetLoc, {recursive: true});
+  fs.mkdirSync(assetLoc, { recursive: true });
   for (const file of findFiles(assetLoc, `${assetLoc}/`)) {
     const emoteName: string = file
       .substr(file.lastIndexOf('/') + 1)
@@ -233,11 +233,11 @@ export default function Emotes() {
     try {
       setImportState('import started');
       const emoteGroups = JSON.parse(await navigator.clipboard.readText());
-      const promises = await fetchEmotes(
-        emoteGroups
-      );
+      const promises = await fetchEmotes(emoteGroups);
       if (promises.length === 0) {
-        setImportState('Did you forget step 3? JSON loaded but no emotes found.');
+        setImportState(
+          'Did you forget step 3? JSON loaded but no emotes found.'
+        );
         return;
       }
       let numFinished = 0;
@@ -299,15 +299,26 @@ export default function Emotes() {
                 Install BTTV in your browser if you haven&rsquo;t already.
               </li>
               <li> Open your twitch channel page with chat. </li>
-              <li> Open the BTTV emote panel by clicking the button to the left of the &rdquo;Chat&rdquo; Button and scroll though to load all the emotes. </li>
+              <li>
+                {' '}
+                Open the BTTV emote panel by clicking the button to the left of
+                the &rdquo;Chat&rdquo; Button and scroll though to load all the
+                emotes.{' '}
+              </li>
               <li>
                 Open the browser console: Browser menu &gt; More Tools &gt; Web
                 Developer Tools &gt; &rdquo;Console&rdquo; tab
               </li>
               <li>
                 Note that pasting code into the browser console is not normal
-                and you should trust or verify the script. See
-                {' '}<a href="https://en.wikipedia.org/wiki/Self-XSS" target="_blank">Self-XSS</a>{' '}
+                and you should trust or verify the script. See{' '}
+                <a
+                  href="https://en.wikipedia.org/wiki/Self-XSS"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Self-XSS
+                </a>{' '}
                 for more info.
               </li>
               <li>
