@@ -62,7 +62,7 @@ reloadEmotes();
  * Downloads file from remote HTTPS host and puts its contents to the
  * specified location but adds the appropriate file extension from the MIME type.
  */
-async function download(url: string, filePath: string) : Promise<string> {
+async function download(url: string, filePath: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(filePath);
     let fileInfo: { mime?: string; size?: number } = {};
@@ -210,12 +210,12 @@ export default function Emotes() {
     forceUpdate();
   }
 
-  const [copyScriptButtonTitle, setCopyScriptButtonTitle] = React.useState<
-    string
-  >(t('Copy Code'));
+  const [copyButtonTitle, setCopyButtonTitle] = React.useState<string>(
+    t('Copy Code')
+  );
   function copyEmoteScrapeScript() {
     navigator.clipboard.writeText(emoteScrapeScript);
-    setCopyScriptButtonTitle(t('Code Copied!'));
+    setCopyButtonTitle(t('Code Copied!'));
   }
 
   const [importState, setImportState] = React.useState<string>('');
@@ -304,7 +304,7 @@ export default function Emotes() {
                   color="primary"
                   onClick={copyEmoteScrapeScript}
                 >
-                  {copyScriptButtonTitle}
+                  {copyButtonTitle}
                 </Button>
               </li>
               <li>
