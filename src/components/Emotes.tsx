@@ -286,11 +286,10 @@ export default function Emotes() {
             To import existing Twitch/BTTV/FFZ emotes you can do the following:
             <ol>
               <li>
-                {' '}
-                Install BTTV in your browser if you haven&rsquo;t already.{' '}
+                Install BTTV in your browser if you haven&rsquo;t already.
               </li>
               <li> Open your twitch channel page with chat. </li>
-              <li> Open the BTTV emote panel to the left of the &rdquo;Chat&rdquo; Button and scroll though to load all the emotes. </li>
+              <li> Open the BTTV emote panel by clicking the button to the left of the &rdquo;Chat&rdquo; Button and scroll though to load all the emotes. </li>
               <li>
                 Open the browser console: Browser menu &gt; More Tools &gt; Web
                 Developer Tools &gt; &rdquo;Console&rdquo; tab
