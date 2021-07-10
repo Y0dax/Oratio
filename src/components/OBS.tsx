@@ -88,7 +88,7 @@ function SpeechPhrase(props: any) {
   const timeBetweenChars: number = 150 - speed;
   const emojiRegex = /:([^:]+):/g;
   const emojis = [...message.matchAll(emojiRegex)].filter(
-    (e) => uEmojiParser.parse(e[0]) != e[0]
+    (e) => uEmojiParser.parse(e[0]) !== e[0]
   );
   const emotes = [...message.matchAll(/\w+/g)].filter(
     (e) => e[0] in emoteNameToUrl
@@ -120,8 +120,7 @@ function SpeechPhrase(props: any) {
           const foundEmote = emotes.find((emote) => emote.index === i);
           if (foundEmoji) {
             const emojiString = foundEmoji[0];
-            const emojiHTML = uEmojiParser.parse(emojiString);
-            speechDisplay.current.innerHTML += message.charAt(i);
+            speechDisplay.current.innerHTML += uEmojiParser.parse(emojiString);
             i += emojiString.length;
           } else if (foundEmote) {
             const emoteName = foundEmote[0];

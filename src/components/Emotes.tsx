@@ -30,7 +30,7 @@ function findFiles(dir: string, return_prefix: string) {
       for (const f of findFiles(`${dir}/${file}`, `${file}/`)) {
         files.push(f);
       }
-    } else if (file != '.DS_Store') {
+    } else if (file !== '.DS_Store') {
       files.push(file);
     }
   }
@@ -38,7 +38,7 @@ function findFiles(dir: string, return_prefix: string) {
 }
 
 function clearObject(obj) {
-  for (const k in obj) {
+  for (const k of Object.keys(obj)) {
     delete obj[k];
   }
 }
@@ -50,7 +50,6 @@ function reloadEmotes() {
     const emoteName = file.substr(file.lastIndexOf('/') + 1).split('.')[0];
     emoteNameToUrl[emoteName] = `../${escape(file)}`;
   }
-  console.log(emoteNameToUrl);
 }
 reloadEmotes();
 
@@ -82,7 +81,6 @@ async function download(url, filePath) {
       const extension = (fileInfo.mime || '/png').split('/')[1];
       const filePathWithExtension = `${filePath}.${extension}`;
       fs.renameSync(filePath, filePathWithExtension);
-      console.log(`downloaded emote: ${url} -> ${filePath}`);
       resolve(filePathWithExtension);
     });
 
@@ -98,7 +96,8 @@ async function download(url, filePath) {
   });
 }
 
-function fix_emote_url(url) {
+function fixEmoteURL(url_: string) {
+  let url = url_;
   if (url.startsWith('//')) url = `https:${url}`;
   // upgrade resolution
   url = url.replace(/\/2x$/i, '/3x');
@@ -120,7 +119,7 @@ async function fetchEmotes(emoteGroups) {
     fs.mkdirSync(groupDir, { recursive: true });
     for (const [name, url] of Object.entries(group.emotes)) {
       const filePath = `${groupDir}/${name}`;
-      fileInfoPromises.push(download(fix_emote_url(url), filePath));
+      fileInfoPromises.push(download(fixEmoteURL(url), filePath));
     }
   }
   await Promise.all(fileInfoPromises);
@@ -166,9 +165,14 @@ export function Emote(attrs) {
   const { emoteName } = attrs;
   const classes = useStyles();
   if (emoteName in emoteNameToUrl) {
-    return <img src={emoteNameToUrl[emoteName]} className={classes.emote} />;
+    return (
+      <img
+        src={emoteNameToUrl[emoteName]}
+        className={classes.emote}
+        alt={emoteName}
+      />
+    );
   }
-  console.log(emoteName);
   return <span>{emoteName}</span>;
 }
 
@@ -182,7 +186,7 @@ export default function Emotes() {
           <h2>Emote preview</h2>
           <table>
             <tbody>
-              {Object.entries(emoteNameToUrl).map(([name, path]) => (
+              {Object.keys(emoteNameToUrl).map((name: string) => (
                 <tr key={name}>
                   <td>{name}</td>
                   <td>
