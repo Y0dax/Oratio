@@ -21,7 +21,7 @@ const assetLoc =
   process.env.NODE_ENV === 'development'
     ? 'assets/sounds'
     : 'resources/assets/sounds';
-fs.readdir(assetLoc, (err: Error, files: string[]) => {
+fs.readdir(assetLoc, (err: Error | null, files: string[]) => {
   if (err) {
     throw err;
   }
