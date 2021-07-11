@@ -324,7 +324,7 @@ export default function Emotes() {
                 for more info.
               </li>
               <li>
-                Click this button:
+                Click this button to copy the script:
                 <Button
                   id="script-copy"
                   variant="contained"
@@ -340,14 +340,11 @@ export default function Emotes() {
               </li>
               <li>
                 A &rdquo;Copy emotes&rdquo; button should have appeared on your
-                twitch stream. Click it.
+                twitch stream. Click it to copy a JSON string containing the
+                emote data.
               </li>
               <li>
-                Your clipboard should now contain a JSON string with emote
-                groups.
-              </li>
-              <li>
-                Click this button:
+                Click this button to import the emotes:
                 <Button
                   id="open-preferences"
                   variant="contained"
@@ -362,7 +359,7 @@ export default function Emotes() {
             </ol>
           </div>
 
-          <h2>Emote preview</h2>
+          <h2>Emote Previews</h2>
           <table>
             <tbody>
               {Object.keys(emoteNameToUrl)
