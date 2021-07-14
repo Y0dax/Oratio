@@ -22,6 +22,10 @@ app.use(
   '/assets/sounds',
   express.static(path.join(__dirname, '../assets/sounds'))
 );
+app.use(
+  '/assets/emotes',
+  express.static(path.join(__dirname, '../assets/emotes'))
+);
 
 const manifest = fs.readFileSync(
   path.join(__dirname, '../assets/dist/static/manifest.json'),

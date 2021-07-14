@@ -130,6 +130,9 @@ export default function Home() {
         soundFileName: localStorage.getItem('soundFileName'),
         volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
         bubbleColor: localStorage.getItem('bubbleColor') || '#000',
+        emoteNameToUrl: JSON.parse(
+          localStorage.getItem('emoteNameToUrl') || ''
+        ),
       },
     });
     if (win !== undefined) {

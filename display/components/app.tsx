@@ -7,7 +7,6 @@ import { io } from 'socket.io-client';
 
 const socket = io();
 const DEFAULT_TIMEOUT = 4000;
-const emoteNameToUrl: { [key: string]: string } = {};
 
 const useStyles = makeStyles(() =>
   createStyles({
@@ -16,13 +15,6 @@ const useStyles = makeStyles(() =>
       height: '100vh',
       // padding: theme.spacing(4),
     }),
-    // titlebar: () => ({
-    //   position: 'absolute',
-    //   width: '100%',
-    //   top: 0,
-    //   '-webkit-app-region': 'drag',
-    //   height: '35px',
-    // }),
     textTable: () => ({
       display: 'table',
       height: '100%',
@@ -48,6 +40,13 @@ const useStyles = makeStyles(() =>
     hidden: () => ({
       display: 'none',
     }),
+    emote: {
+      display: 'inline-block',
+      width: 'auto',
+      height: 'auto',
+      'max-height': '2em',
+      'max-width': '1000px',
+    },
   })
 );
 
@@ -76,9 +75,20 @@ const emoteRequest = async (value: string) => {
   return response.json();
 };
 
-export function Emote(attrs: { emoteName: string }) {
+// const emoteNameToUrl = JSON.parse(localStorage.getItem('emoteNameToUrl') || '');
+let emoteNameToUrl: { [key: string]: string } = {};
+
+function Emote(attrs: { emoteName: string }) {
   const { emoteName } = attrs;
-  const classes = useStyles();
+  const classes = useStyles({
+    emote: {
+      display: 'inline-block',
+      width: 'auto',
+      height: 'auto',
+      'max-height': '2em',
+      'max-width': '1000px',
+    },
+  });
   if (emoteName in emoteNameToUrl) {
     return (
       <img
@@ -103,6 +113,8 @@ function SpeechPhrase(props: any) {
   const { fontColor } = settings;
   const { fontWeight } = settings;
   const { soundFileName } = settings;
+  emoteNameToUrl = settings.emoteNameToUrl;
+
   const speechSound = new Howl({
     src: [`../assets/sounds/${soundFileName}`],
     volume: settings.volume,
@@ -130,34 +142,6 @@ function SpeechPhrase(props: any) {
     const typewriter = () => {
       if (i < message.length) {
         speechSound.stop();
-        // const charToFill = message.charAt(i);
-        // const foundEmoji = emojis.find((emoji) => emoji.index === i);
-        // let playSound = charToFill !== ' ';
-
-        // // Check any emoji identifiers and attempt to gather a related image
-        // if (foundEmoji) {
-        //   const emojiString = foundEmoji[0];
-        //   i += emojiString.length;
-
-        //   emoteRequest(emojiString)
-        //     .then((data) => {
-        //       if (data.found) {
-        //         speechDisplay.current.innerHTML += data.value;
-        //       } else {
-        //         playSound = false;
-        //       }
-        //       return emojiString;
-        //     })
-        //     .catch((error) => {
-        //       throw error;
-        //     });
-        // }
-        // TODO: the reference object is initialized as null but sometimes comes
-        // through as null here even though it is mounted on the component
-        // hack to bypass this but should figure out why
-        // else if (speechDisplay.current) {
-        //   speechDisplay.current.innerHTML += charToFill;
-        // }
 
         // TODO: Audio play does not seem to come through on browser load
         if (message.charAt(i) !== ' ') {
