@@ -200,7 +200,7 @@ export default function Home() {
                   autoFocus
                 />
               </Grid>
-              <Grid container item xs={12} justify="flex-end">
+              <Grid container item xs={12} justify-content="flex-end">
                 <Button
                   id="send-text"
                   variant="contained"
@@ -223,10 +223,10 @@ export default function Home() {
               container
               spacing={3}
               alignContent="flex-end"
-              justify="flex-end"
+              justify-content="flex-end"
               className={classes.bottomButtons}
             >
-              {/* <Grid container item justify="flex-end" xs={12}> */}
+              {/* <Grid container item justify-content="flex-end" xs={12}> */}
               <Link to="/preferences" className={classes.link}>
                 <Button
                   id="open-preferences"
