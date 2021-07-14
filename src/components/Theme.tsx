@@ -1,7 +1,7 @@
-import { createMuiTheme } from '@material-ui/core';
+import { createTheme } from '@material-ui/core';
 
 export default function Theme() {
-  return createMuiTheme({
+  return createTheme({
     palette: {
       type: 'dark',
       background: {
