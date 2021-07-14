@@ -30,6 +30,8 @@ node_modules
 # OSX
 .DS_Store
 
+assets/emotes/*
+
 # App packaged
 release
 src/main.prod.js

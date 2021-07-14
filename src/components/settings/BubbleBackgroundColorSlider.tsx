@@ -19,12 +19,9 @@ export default function BubbleBackgroundColorPicker() {
   return (
     <div>
       <Typography id="color-selector" gutterBottom>
-        {t('Speech Bubble Color')}
+        <ColorLensIcon /> {t('Speech Bubble Color')}
       </Typography>
       <Grid container spacing={3}>
-        <Grid item>
-          <ColorLensIcon />
-        </Grid>
         <Grid item xs>
           <SketchPicker
             color={bubbleColor}

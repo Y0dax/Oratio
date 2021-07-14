@@ -19,12 +19,9 @@ export default function FontColorPicker() {
   return (
     <div>
       <Typography id="color-selector" gutterBottom>
-        {t('Text Color')}
+        <ColorLensIcon /> {t('Text Color')}
       </Typography>
       <Grid container spacing={3}>
-        <Grid item>
-          <ColorLensIcon />
-        </Grid>
         <Grid item xs>
           <SketchPicker
             color={fontColor}
