@@ -14,17 +14,17 @@ const useStyles = makeStyles(() =>
   createStyles({
     root: {
       flexGrow: 1,
-      backgroundColor: 'blue',
+      // backgroundColor: 'blue',
       height: '100vh',
       // padding: theme.spacing(4),
     },
-    titlebar: {
-      position: 'absolute',
-      width: '100%',
-      top: 0,
-      '-webkit-app-region': 'drag',
-      height: '35px',
-    },
+    // titlebar: {
+    //   position: 'absolute',
+    //   width: '100%',
+    //   top: 0,
+    //   '-webkit-app-region': 'drag',
+    //   height: '35px',
+    // },
     textTable: {
       display: 'table',
       height: '100%',
@@ -95,7 +95,9 @@ function SpeechPhrase(props: any) {
   );
 
   // Account for the time to print a message so it doesn't disappear early
-  const timeout: number = message.length * timeBetweenChars + DEFAULT_TIMEOUT;
+  const timeout: number =
+    message.length * timeBetweenChars +
+    (message.length > 0 ? DEFAULT_TIMEOUT : 0);
 
   useEffect(() => {
     speechDisplay.current.style.fontSize = fontSize;
@@ -183,8 +185,6 @@ export default function OBS() {
   const classes = useStyles();
   return (
     <div className={classes.root}>
-      <title>Oratio OBS Display</title>
-      <div className={classes.titlebar} />
       <div className={classes.textTable}>
         <div className={classes.text}>
           <div
