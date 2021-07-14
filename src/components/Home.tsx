@@ -58,6 +58,10 @@ const useStyles = makeStyles(() =>
     bottomButtons: {
       marginTop: '40px',
     },
+    browserSource: {
+      position: 'absolute',
+      left: '10px',
+    },
   })
 );
 
@@ -181,6 +185,10 @@ export default function Home() {
               className={classes.bottomButtons}
             >
               {/* <Grid container item justify="flex-end" xs={12}> */}
+              <div className={classes.browserSource}>
+                Browser source running at:{' '}
+                <a href="http://localhost:3000"> http://localhost:3000</a>
+              </div>
               <Link to="/preferences" className={classes.link}>
                 <Button
                   id="open-preferences"

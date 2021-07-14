@@ -118,6 +118,7 @@ const createWindow = async () => {
       app.quit();
     }
     globalShortcut.unregisterAll();
+    server.close();
   });
 
   const menuBuilder = new MenuBuilder(mainWindow);
@@ -141,6 +142,7 @@ app.on('window-all-closed', () => {
     app.quit();
   }
   globalShortcut.unregisterAll();
+  server.close();
 });
 
 app
