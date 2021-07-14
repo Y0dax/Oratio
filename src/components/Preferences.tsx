@@ -8,6 +8,7 @@ import {
 import { Button, Grid } from '@material-ui/core';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import InsertEmoticonIcon from '@material-ui/icons/InsertEmoticon';
 import * as Theme from './Theme';
 import FontSizeSlider from './settings/FontSizeSlider';
 import FontColorPicker from './settings/FontColorPicker';
@@ -46,6 +47,9 @@ const useStyles = makeStyles(() =>
     bottomButtons: {
       marginTop: '40px',
     },
+    emoteIcon: {
+      marginRight: '8px',
+    },
   })
 );
 
@@ -75,6 +79,19 @@ export default function Preferences() {
               </Grid>
               <Grid item xs={6}>
                 <LanguageSelector />
+              </Grid>
+              <Grid item xs={12}>
+                <Link to="/emotes" className={classes.link}>
+                  <Button
+                    id="open-preferences"
+                    variant="contained"
+                    className={classes.button}
+                    color="primary"
+                  >
+                    <InsertEmoticonIcon className={classes.emoteIcon} />
+                    {t('Manage Emotes')}
+                  </Button>
+                </Link>
               </Grid>
               <Grid item xs={6}>
                 <FontColorPicker />
