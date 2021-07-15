@@ -108,12 +108,24 @@ export default function Home() {
     };
   });
 
+  const textHistory: string[] = [];
+  let textHistoryPos: number = textHistory.length;
+
+  const addToHistory = (text: string) => {
+    if (textHistory[textHistory.length - 1] !== text) {
+      textHistory.push(text);
+      if (textHistory.length >= 100) {
+        textHistory.shift();
+      }
+      textHistoryPos = textHistory.length;
+    }
+  };
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSpeechSendClicked = async (event: any) => {
     event.preventDefault();
     const { speech } = event.currentTarget.elements;
-    // eslint-disable-next-line no-console
-    console.log(speech.value);
+    if (speech.value.trim() === '') return;
     socket.emit('phraseSend', {
       phrase: speech.value,
       settings: {
@@ -132,6 +144,8 @@ export default function Home() {
     if (win !== undefined) {
       win.webContents.send('speech', speech.value);
     }
+
+    addToHistory(speech.value);
     speech.value = '';
   };
 
@@ -141,61 +155,79 @@ export default function Home() {
   let tabCompleteOptions: string[] = [];
   let tabCompleteOptionIndex = 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async function handleTabComplete(event: any) {
-    if (event.key !== 'Tab') return;
-    event.preventDefault(); // do not go to the next element.
-
-    const textField = event.target;
-    const text = textField.value;
-    const { selectionStart } = textField;
-    const words = [...text.matchAll(/\w+/g)].filter(
-      (word) => word.index < selectionStart
-    );
-    if (!words.length) {
-      // console.log('northing to autocomplete');
-      return;
-    }
-
-    const word = words[words.length - 1];
-    const prefixLow = word[0].toLowerCase();
-    if (
-      // Is this a different tab-complete than before?
-      !(
-        word.index === tabCompleteStart &&
-        tabCompletePrefixLow.length &&
-        prefixLow.startsWith(tabCompletePrefixLow)
-      )
-    ) {
-      tabCompleteStart = word.index;
-      tabCompletePrefixLow = prefixLow;
-      tabCompleteOptions = Object.entries(lowercaseToEmoteName)
-        .filter(([emoteLow]) => emoteLow.startsWith(prefixLow))
-        .map(([, emoteName]) => `${emoteName} `);
-      if (tabCompleteOptions.length === 0) {
-        // no prefix match found. try substring matching.
-        tabCompleteOptions = Object.entries(lowercaseToEmoteName)
-          .filter(([emoteLow]) => emoteLow.indexOf(prefixLow) !== -1)
-          .map(([, emoteName]) => `${emoteName} `);
+  async function handleTextBoxKeypress(event: any) {
+    // Autocomplete
+    if (event.key === 'Tab') {
+      event.preventDefault(); // do not go to the next element.\
+      const textField = event.target;
+      const text = textField.value;
+      const { selectionStart } = textField;
+      const words = [...text.matchAll(/\w+/g)].filter(
+        (word) => word.index < selectionStart
+      );
+      if (!words.length) {
+        // console.log('northing to autocomplete');
+        return;
       }
-      tabCompleteOptions.sort();
-      tabCompleteOptionIndex = 0;
-    } else {
-      const optionCount = tabCompleteOptions.length;
-      tabCompleteOptionIndex =
-        (tabCompleteOptionIndex + (event.shiftKey ? -1 : 1) + optionCount) %
-        optionCount;
+
+      const word = words[words.length - 1];
+      const prefixLow = word[0].toLowerCase();
+      if (
+        // Is this a different tab-complete than before?
+        !(
+          word.index === tabCompleteStart &&
+          tabCompletePrefixLow.length &&
+          prefixLow.startsWith(tabCompletePrefixLow)
+        )
+      ) {
+        tabCompleteStart = word.index;
+        tabCompletePrefixLow = prefixLow;
+        tabCompleteOptions = Object.entries(lowercaseToEmoteName)
+          .filter(([emoteLow]) => emoteLow.startsWith(prefixLow))
+          .map(([, emoteName]) => `${emoteName} `);
+        if (tabCompleteOptions.length === 0) {
+          // no prefix match found. try substring matching.
+          tabCompleteOptions = Object.entries(lowercaseToEmoteName)
+            .filter(([emoteLow]) => emoteLow.indexOf(prefixLow) !== -1)
+            .map(([, emoteName]) => `${emoteName} `);
+        }
+        tabCompleteOptions.sort();
+        tabCompleteOptionIndex = 0;
+      } else {
+        const optionCount = tabCompleteOptions.length;
+        tabCompleteOptionIndex =
+          (tabCompleteOptionIndex + (event.shiftKey ? -1 : 1) + optionCount) %
+          optionCount;
+      }
+
+      if (tabCompleteOptions.length === 0) {
+        // console.log('no matching autocomplete options for: ', prefixLow);
+        return;
+      }
+
+      const option = tabCompleteOptions[tabCompleteOptionIndex];
+      tabCompletePrefixLow = option.toLowerCase().slice(0, option.length - 1);
+      textField.value =
+        text.slice(0, tabCompleteStart) + option + text.slice(selectionStart);
+      textField.selectionStart = tabCompleteStart + option.length;
     }
 
-    if (tabCompleteOptions.length === 0) {
-      // console.log('no matching autocomplete options for: ', prefixLow);
-      return;
+    if (event.key === 'ArrowUp') {
+      event.preventDefault(); // do not go to the next element.
+      if (textHistoryPos > 0) {
+        textHistoryPos -= 1;
+      }
+      event.target.value = textHistory[textHistoryPos] || '';
     }
 
-    const option = tabCompleteOptions[tabCompleteOptionIndex];
-    tabCompletePrefixLow = option.toLowerCase().slice(0, option.length - 1);
-    textField.value =
-      text.slice(0, tabCompleteStart) + option + text.slice(selectionStart);
-    textField.selectionStart = tabCompleteStart + option.length;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault(); // do not go to the next element.
+
+      if (textHistoryPos <= textHistory.length - 1) {
+        textHistoryPos += 1;
+      }
+      event.target.value = textHistory[textHistoryPos] || '';
+    }
   }
 
   return (
@@ -214,7 +246,7 @@ export default function Home() {
                   id="speech-input"
                   label={t('Speech')}
                   variant="outlined"
-                  onKeyDown={handleTabComplete}
+                  onKeyDown={handleTextBoxKeypress}
                   fullWidth
                   autoFocus
                 />
