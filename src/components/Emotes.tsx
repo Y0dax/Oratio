@@ -54,6 +54,7 @@ function reloadEmotes() {
     emoteNameToUrl[emoteName] = `../${escape(file)}`;
     lowercaseToEmoteName[emoteName.toLowerCase()] = emoteName;
   }
+  localStorage.setItem('emoteNameToUrl', JSON.stringify(emoteNameToUrl));
 }
 async function reloadEmotesAsync() {
   reloadEmotes();
