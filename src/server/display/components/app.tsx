@@ -3,51 +3,56 @@ import ReactDOM from 'react-dom';
 
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Howl } from 'howler';
-import uEmojiParser from 'universal-emoji-parser';
-import { Emote, emoteNameToUrl } from './Emotes';
+import { io } from 'socket.io-client';
 
-const ipc = require('electron').ipcRenderer;
-
+const socket = io();
 const DEFAULT_TIMEOUT = 4000;
 
 const useStyles = makeStyles(() =>
   createStyles({
-    root: {
+    root: () => ({
       flexGrow: 1,
-      backgroundColor: 'blue !important',
       height: '100vh',
       // padding: theme.spacing(4),
-    },
-    textTable: {
+    }),
+    textTable: () => ({
       display: 'table',
       height: '100%',
-    },
-    text: {
+    }),
+    text: () => ({
       color: 'white',
       fontSize: '3rem',
       textAlign: 'left',
       display: 'table-cell',
       verticalAlign: 'bottom',
-    },
-    bubble: {
-      backgroundColor: localStorage.getItem('bubbleColor') || '#000',
+    }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    bubble: (props: any) => ({
+      backgroundColor: props.bubbleColor,
       fontFamily: "'Baloo Da 2', cursive",
       padding: '20px',
       border: '3px solid #a9a9a9',
       borderRadius: '8px',
-    },
-    span: {
+    }),
+    span: () => ({
       display: 'block',
-    },
-    hidden: {
+    }),
+    hidden: () => ({
       display: 'none',
+    }),
+    emote: {
+      display: 'inline-block',
+      width: 'auto',
+      height: 'auto',
+      'max-height': '2em',
+      'max-width': '1000px',
     },
   })
 );
 
 // eslint-disable-next-line react/display-name
 const SpeechDisplay = React.forwardRef<HTMLSpanElement>((_props, ref) => {
-  const classes = useStyles();
+  const classes = useStyles(_props);
   return <span ref={ref} className={classes.span} />;
 });
 
@@ -62,27 +67,63 @@ function uniqueHash() {
   return rtn;
 }
 
+// Get emote element from the server as the client bundle fails to load them
+const emoteRequest = async (value: string) => {
+  const url = new URL('http://localhost:4563/emotes');
+  url.searchParams.append('string', value);
+  const response = await fetch(url.toString());
+  return response.json();
+};
+
+// const emoteNameToUrl = JSON.parse(localStorage.getItem('emoteNameToUrl') || '');
+let emoteNameToUrl: { [key: string]: string } = {};
+
+function Emote(attrs: { emoteName: string }) {
+  const { emoteName } = attrs;
+  const classes = useStyles({
+    emote: {
+      display: 'inline-block',
+      width: 'auto',
+      height: 'auto',
+      'max-height': '2em',
+      'max-width': '1000px',
+    },
+  });
+  if (emoteName in emoteNameToUrl) {
+    return (
+      <img
+        src={emoteNameToUrl[emoteName]}
+        className={classes.emote}
+        alt={emoteName}
+      />
+    );
+  }
+  return <span>{emoteName}</span>;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function SpeechPhrase(props: any) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const speechDisplay: any = useRef<HTMLSpanElement>(null);
-  const { message } = props;
+  const { message, settings } = props;
 
   // TODO Test for performance impact of reading settings on every input
-  const speed = parseInt(localStorage.getItem('textSpeed') || '75', 10);
-  const fontSize = parseInt(localStorage.getItem('fontSize') || '48', 10);
-  const fontColor = localStorage.getItem('fontColor') || '#ffffff';
-  const fontWeight = parseInt(localStorage.getItem('fontWeight') || '400', 10);
-  const soundFileName = localStorage.getItem('soundFileName');
+  const { speed } = settings;
+  const { fontSize } = settings;
+  const { fontColor } = settings;
+  const { fontWeight } = settings;
+  const { soundFileName } = settings;
+  emoteNameToUrl = settings.emoteNameToUrl;
+
   const speechSound = new Howl({
     src: [`../assets/sounds/${soundFileName}`],
-    volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
+    volume: settings.volume,
   });
+  // const regex = /:([^:]+):/g;
+  // const emojis = [...message.matchAll(regex)];
   const timeBetweenChars: number = 150 - speed;
   const emojiRegex = /:([^:]+):/g;
-  const emojis = [...message.matchAll(emojiRegex)].filter(
-    (e) => uEmojiParser.parse(e[0]) !== e[0]
-  );
+  const emojis = [...message.matchAll(emojiRegex)];
   const emotes = [...message.matchAll(/\w+/g)].filter(
     (e) => e[0] in emoteNameToUrl
   );
@@ -97,26 +138,36 @@ function SpeechPhrase(props: any) {
     speechDisplay.current.style.color = fontColor;
     speechDisplay.current.style.fontWeight = fontWeight;
 
-    // `i` is the message character index
     let i = 0;
     const typewriter = () => {
       if (i < message.length) {
         speechSound.stop();
+
+        // TODO: Audio play does not seem to come through on browser load
         if (message.charAt(i) !== ' ') {
           speechSound.play();
         }
 
-        // TODO: the reference object is initialized as null but sometimes comes
-        // through as null here even though it is mounted on the component
-        // hack to bypass this but should figure out why
         if (speechDisplay.current) {
           // Check whether this character is the start of an emoji or emote.
           const foundEmoji = emojis.find((emoji) => emoji.index === i);
           const foundEmote = emotes.find((emote) => emote.index === i);
           if (foundEmoji) {
             const emojiString = foundEmoji[0];
-            speechDisplay.current.innerHTML += uEmojiParser.parse(emojiString);
             i += emojiString.length;
+
+            emoteRequest(emojiString)
+              .then((data) => {
+                if (data.found) {
+                  speechDisplay.current.innerHTML += data.value;
+                } // else {
+                //   playSound = false;
+                // }
+                return emojiString;
+              })
+              .catch((error) => {
+                throw error;
+              });
           } else if (foundEmote) {
             const emoteName = foundEmote[0];
             const emoteContainer = document.createElement('span');
@@ -129,7 +180,8 @@ function SpeechPhrase(props: any) {
             i += 1;
           }
         }
-
+        // eslint-disable-next-line no-plusplus
+        // i++;
         setTimeout(typewriter, timeBetweenChars);
       } else {
         setTimeout(() => {
@@ -155,27 +207,36 @@ function SpeechPhrase(props: any) {
 function reducer(state: any, action: any) {
   switch (action.type) {
     case 'push':
-      return { phrases: [...state.phrases, action.phrase] };
+      return {
+        phrases: [...state.phrases, action.phrase],
+        settings: action.settings,
+      };
     case 'shift':
-      return { phrases: state.phrases.slice(1) };
+      return { phrases: state.phrases.slice(1), settings: state.settings };
     default:
       return state;
   }
 }
 
-export default function OBS() {
-  const [state, dispatch] = useReducer(reducer, { phrases: [] });
+export default function App() {
+  const [state, dispatch] = useReducer(reducer, { phrases: [], settings: {} });
 
-  // Only register ipc speech callback once after component is mounted
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ipc.on('speech', (_event: any, message: any) => {
+    socket.on('phraseRender', (data) => {
       const key: string = uniqueHash();
-      dispatch({ type: 'push', phrase: { message, key } });
+      const message: string = data.phrase;
+      dispatch({
+        type: 'push',
+        phrase: { message, key },
+        settings: data.settings,
+      });
     });
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
-  const classes = useStyles();
+  const classes = useStyles({ bubbleColor: state.settings.bubbleColor });
   return (
     <div className={classes.root}>
       <div className={classes.textTable}>
@@ -191,6 +252,7 @@ export default function OBS() {
                   key={phrase.key}
                   message={phrase.message}
                   dispatch={dispatch}
+                  settings={state.settings}
                 />
               );
             })}

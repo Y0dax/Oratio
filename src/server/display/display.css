@@ -17,10 +17,4 @@ body {
   height: 100%;
   width: 100%;
   font-family: 'Roboto', sans-serif;
-  background-color: #202124;
-  overflow: auto;
-  box-sizing: border-box;
-}
-a {
-  color: #16c2d4;
 }
