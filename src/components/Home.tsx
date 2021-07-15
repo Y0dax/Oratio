@@ -22,8 +22,8 @@ const theme = Theme.default();
 const useStyles = makeStyles(() =>
   createStyles({
     root: {
-      flexGrow: 1,
-      height: '100vh',
+      // flexGrow: 1,
+      // height: '100vh',
       background: theme.palette.background.default,
       color: 'white',
     },
@@ -60,6 +60,10 @@ const useStyles = makeStyles(() =>
     bottomButtons: {
       marginTop: '40px',
     },
+    browserSource: {
+      position: 'absolute',
+      left: '10px',
+    },
   })
 );
 
@@ -84,16 +88,6 @@ async function handleOpenObs() {
       },
     });
     win.loadURL(`file://${__dirname}/index.html#/obs`);
-    // win.webContents.setFrameRate(60);
-
-    // win.webContents.on('paint', (event, dirty, image) => {
-    //   // updateBitmap(dirty, image.getBitmap())
-    //   fs.writeFile('ex.png', image.toPNG(), (err: Error) => {
-    //     if (err) throw err;
-    //     // eslint-disable-next-line no-console
-    //     // console.log('The file has been saved!');
-    //   });
-    // });
 
     win.on('closed', () => {
       win = undefined;
@@ -105,7 +99,7 @@ export default function Home() {
   const classes = useStyles();
   const { t } = useTranslation();
   const socket = io(
-    `http://localhost:${localStorage.getItem('serverPort') || '3000'}`
+    `http://localhost:${localStorage.getItem('serverPort') || '4563'}`
   );
 
   useEffect(() => {
@@ -252,6 +246,16 @@ export default function Home() {
               className={classes.bottomButtons}
             >
               {/* <Grid container item justify="flex-end" xs={12}> */}
+              <div className={classes.browserSource}>
+                Browser source running at:{' '}
+                <a
+                  href="http://localhost:4563"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  http://localhost:4563
+                </a>
+              </div>
               <Link to="/preferences" className={classes.link}>
                 <Button
                   id="open-preferences"

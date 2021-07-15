@@ -69,7 +69,7 @@ function uniqueHash() {
 
 // Get emote element from the server as the client bundle fails to load them
 const emoteRequest = async (value: string) => {
-  const url = new URL('http://localhost:3000/emotes');
+  const url = new URL('http://localhost:4563/emotes');
   url.searchParams.append('string', value);
   const response = await fetch(url.toString());
   return response.json();

@@ -6,7 +6,7 @@ import path from 'path';
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import uEmojiParser from 'universal-emoji-parser';
-import App from '../display/components/app';
+import App from './display/components/app';
 
 const app = express();
 
@@ -15,20 +15,20 @@ app.set('view engine', 'ejs');
 // eslint-disable-next-line no-underscore-dangle
 app.engine('ejs', require('ejs').__express);
 
-app.set('views', path.join(__dirname, '../assets/dist/views'));
+app.set('views', path.join(__dirname, '../../assets/dist/views'));
 
-app.use('/', express.static(path.join(__dirname, '../assets/dist/static')));
+app.use('/', express.static(path.join(__dirname, '../../assets/dist/static')));
 app.use(
   '/assets/sounds',
-  express.static(path.join(__dirname, '../assets/sounds'))
+  express.static(path.join(__dirname, '../../assets/sounds'))
 );
 app.use(
   '/assets/emotes',
-  express.static(path.join(__dirname, '../assets/emotes'))
+  express.static(path.join(__dirname, '../../assets/emotes'))
 );
 
 const manifest = fs.readFileSync(
-  path.join(__dirname, '../assets/dist/static/manifest.json'),
+  path.join(__dirname, '../../assets/dist/static/manifest.json'),
   'utf-8'
 );
 

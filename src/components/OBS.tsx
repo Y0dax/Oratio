@@ -14,17 +14,10 @@ const useStyles = makeStyles(() =>
   createStyles({
     root: {
       flexGrow: 1,
-      // backgroundColor: 'blue',
+      backgroundColor: 'blue !important',
       height: '100vh',
       // padding: theme.spacing(4),
     },
-    // titlebar: {
-    //   position: 'absolute',
-    //   width: '100%',
-    //   top: 0,
-    //   '-webkit-app-region': 'drag',
-    //   height: '35px',
-    // },
     textTable: {
       display: 'table',
       height: '100%',

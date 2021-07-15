@@ -7,7 +7,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 const serverConfig = {
   name: 'server',
   entry: {
-    server: path.resolve(__dirname, 'server', 'server.ts'),
+    server: path.resolve(__dirname, 'src/server', 'server.ts'),
   },
   mode: 'development',
   devtool: 'source-map',
@@ -33,7 +33,7 @@ const serverConfig = {
   },
   plugins: [
     new CopyPlugin({
-      patterns: [{ context: 'server', from: 'views', to: 'views' }],
+      patterns: [{ context: 'src/server', from: 'views', to: 'views' }],
     }),
   ],
 };
@@ -41,7 +41,7 @@ const serverConfig = {
 const clientConfig = {
   name: 'display',
   entry: {
-    display: path.resolve(__dirname, 'display/display.tsx'),
+    display: path.resolve(__dirname, 'src/server/display/display.tsx'),
   },
   mode: 'development',
   devtool: 'source-map',
