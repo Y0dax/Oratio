@@ -15,20 +15,33 @@ app.set('view engine', 'ejs');
 // eslint-disable-next-line no-underscore-dangle
 app.engine('ejs', require('ejs').__express);
 
-app.set('views', path.join(__dirname, '../../assets/dist/views'));
+const resourcePath =
+  process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true'
+    ? ''
+    : '/resources';
 
-app.use('/', express.static(path.join(__dirname, '../../assets/dist/static')));
+app.set(
+  'views',
+  path.join(__dirname, `../..${resourcePath}/assets/dist/views`)
+);
+
+app.use(
+  '/',
+  express.static(
+    path.join(__dirname, `../..${resourcePath}/assets/dist/static`)
+  )
+);
 app.use(
   '/assets/sounds',
-  express.static(path.join(__dirname, '../../assets/sounds'))
+  express.static(path.join(__dirname, `../..${resourcePath}/assets/sounds`))
 );
 app.use(
   '/assets/emotes',
-  express.static(path.join(__dirname, '../../assets/emotes'))
+  express.static(path.join(__dirname, `../..${resourcePath}/assets/emotes`))
 );
 
 const manifest = fs.readFileSync(
-  path.join(__dirname, '../../assets/dist/static/manifest.json'),
+  path.join(__dirname, `../..${resourcePath}/assets/dist/static/manifest.json`),
   'utf-8'
 );
 
