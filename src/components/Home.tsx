@@ -61,8 +61,7 @@ const useStyles = makeStyles(() =>
       marginTop: '40px',
     },
     browserSource: {
-      position: 'absolute',
-      left: '10px',
+      flexGrow: 1,
     },
   })
 );
