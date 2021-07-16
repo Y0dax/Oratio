@@ -15,6 +15,7 @@ import { app, BrowserWindow, shell, globalShortcut } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
+import server from './server/server';
 
 export default class AppUpdater {
   constructor() {
@@ -74,22 +75,13 @@ const createWindow = async () => {
     width: 860,
     height: 850,
     icon: getAssetPath('icon.png'),
+    autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
       enableRemoteModule: true,
       // offscreen: true,
     },
   });
-
-  // mainWindow.webContents.on('paint', (event, dirty, image) => {
-  //   // updateBitmap(dirty, image.getBitmap())
-  //   fs.writeFile('ex.png', image.toPNG(), (err: Error) => {
-  //     if (err) throw err;
-  //     console.log('The file has been saved!');
-  //   });
-  // });
-
-  // mainWindow.webContents.setFrameRate(30);
 
   mainWindow.loadURL(`file://${__dirname}/index.html#/home`);
 
@@ -117,6 +109,7 @@ const createWindow = async () => {
       app.quit();
     }
     globalShortcut.unregisterAll();
+    server.close();
   });
 
   const menuBuilder = new MenuBuilder(mainWindow);
@@ -140,6 +133,7 @@ app.on('window-all-closed', () => {
     app.quit();
   }
   globalShortcut.unregisterAll();
+  server.close();
 });
 
 app
@@ -159,6 +153,11 @@ app
         mainWindow?.show();
       }
     });
+
+    server.listen(4563, () => {
+      console.log(`Server running on http://localhost:4563`);
+    });
+
     return mainWindow;
   })
   .catch(console.log);

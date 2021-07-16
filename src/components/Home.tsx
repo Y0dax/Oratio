@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Grid from '@material-ui/core/Grid';
 import TextField from '@material-ui/core/TextField';
@@ -13,6 +13,7 @@ import MicOffIcon from '@material-ui/icons/MicOff';
 import SettingsIcon from '@material-ui/icons/Settings';
 import { BrowserWindow, remote } from 'electron';
 import { useTranslation } from 'react-i18next';
+import { io } from 'socket.io-client';
 import * as Theme from './Theme';
 
 import { lowercaseToEmoteName } from './Emotes';
@@ -21,8 +22,8 @@ const theme = Theme.default();
 const useStyles = makeStyles(() =>
   createStyles({
     root: {
-      flexGrow: 1,
-      height: '100vh',
+      // flexGrow: 1,
+      // height: '100vh',
       background: theme.palette.background.default,
       color: 'white',
     },
@@ -59,6 +60,10 @@ const useStyles = makeStyles(() =>
     bottomButtons: {
       marginTop: '40px',
     },
+    browserSource: {
+      position: 'absolute',
+      left: '10px',
+    },
   })
 );
 
@@ -83,16 +88,6 @@ async function handleOpenObs() {
       },
     });
     win.loadURL(`file://${__dirname}/index.html#/obs`);
-    // win.webContents.setFrameRate(60);
-
-    // win.webContents.on('paint', (event, dirty, image) => {
-    //   // updateBitmap(dirty, image.getBitmap())
-    //   fs.writeFile('ex.png', image.toPNG(), (err: Error) => {
-    //     if (err) throw err;
-    //     // eslint-disable-next-line no-console
-    //     // console.log('The file has been saved!');
-    //   });
-    // });
 
     win.on('closed', () => {
       win = undefined;
@@ -100,21 +95,59 @@ async function handleOpenObs() {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function handleSpeechSendClicked(event: any) {
-  event.preventDefault();
-  const { speech } = event.currentTarget.elements;
-  // eslint-disable-next-line no-console
-  console.log(speech.value);
-  if (win !== undefined) {
-    win.webContents.send('speech', speech.value);
-    speech.value = '';
-  }
-}
-
 export default function Home() {
   const classes = useStyles();
   const { t } = useTranslation();
+  const socket = io(
+    `http://localhost:${localStorage.getItem('serverPort') || '4563'}`
+  );
+
+  useEffect(() => {
+    return () => {
+      socket.disconnect();
+    };
+  });
+
+  const textHistory: string[] = [];
+  let textHistoryPos: number = textHistory.length;
+
+  const addToHistory = (text: string) => {
+    if (textHistory[textHistory.length - 1] !== text) {
+      textHistory.push(text);
+      if (textHistory.length >= 100) {
+        textHistory.shift();
+      }
+      textHistoryPos = textHistory.length;
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSpeechSendClicked = async (event: any) => {
+    event.preventDefault();
+    const { speech } = event.currentTarget.elements;
+    if (speech.value.trim() === '') return;
+    socket.emit('phraseSend', {
+      phrase: speech.value,
+      settings: {
+        speed: parseInt(localStorage.getItem('textSpeed') || '75', 10),
+        fontSize: parseInt(localStorage.getItem('fontSize') || '48', 10),
+        fontColor: localStorage.getItem('fontColor') || '#ffffff',
+        fontWeight: parseInt(localStorage.getItem('fontWeight') || '400', 10),
+        soundFileName: localStorage.getItem('soundFileName'),
+        volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
+        bubbleColor: localStorage.getItem('bubbleColor') || '#000',
+        emoteNameToUrl: JSON.parse(
+          localStorage.getItem('emoteNameToUrl') || ''
+        ),
+      },
+    });
+    if (win !== undefined) {
+      win.webContents.send('speech', speech.value);
+    }
+
+    addToHistory(speech.value);
+    speech.value = '';
+  };
 
   // Tab-complete
   let tabCompleteStart = 0;
@@ -122,61 +155,79 @@ export default function Home() {
   let tabCompleteOptions: string[] = [];
   let tabCompleteOptionIndex = 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async function handleTabComplete(event: any) {
-    if (event.key !== 'Tab') return;
-    event.preventDefault(); // do not go to the next element.
-
-    const textField = event.target;
-    const text = textField.value;
-    const { selectionStart } = textField;
-    const words = [...text.matchAll(/\w+/g)].filter(
-      (word) => word.index < selectionStart
-    );
-    if (!words.length) {
-      // console.log('northing to autocomplete');
-      return;
-    }
-
-    const word = words[words.length - 1];
-    const prefixLow = word[0].toLowerCase();
-    if (
-      // Is this a different tab-complete than before?
-      !(
-        word.index === tabCompleteStart &&
-        tabCompletePrefixLow.length &&
-        prefixLow.startsWith(tabCompletePrefixLow)
-      )
-    ) {
-      tabCompleteStart = word.index;
-      tabCompletePrefixLow = prefixLow;
-      tabCompleteOptions = Object.entries(lowercaseToEmoteName)
-        .filter(([emoteLow]) => emoteLow.startsWith(prefixLow))
-        .map(([, emoteName]) => `${emoteName} `);
-      if (tabCompleteOptions.length === 0) {
-        // no prefix match found. try substring matching.
-        tabCompleteOptions = Object.entries(lowercaseToEmoteName)
-          .filter(([emoteLow]) => emoteLow.indexOf(prefixLow) !== -1)
-          .map(([, emoteName]) => `${emoteName} `);
+  async function handleTextBoxKeypress(event: any) {
+    // Autocomplete
+    if (event.key === 'Tab') {
+      event.preventDefault(); // do not go to the next element.\
+      const textField = event.target;
+      const text = textField.value;
+      const { selectionStart } = textField;
+      const words = [...text.matchAll(/\w+/g)].filter(
+        (word) => word.index < selectionStart
+      );
+      if (!words.length) {
+        // console.log('northing to autocomplete');
+        return;
       }
-      tabCompleteOptions.sort();
-      tabCompleteOptionIndex = 0;
-    } else {
-      const optionCount = tabCompleteOptions.length;
-      tabCompleteOptionIndex =
-        (tabCompleteOptionIndex + (event.shiftKey ? -1 : 1) + optionCount) %
-        optionCount;
+
+      const word = words[words.length - 1];
+      const prefixLow = word[0].toLowerCase();
+      if (
+        // Is this a different tab-complete than before?
+        !(
+          word.index === tabCompleteStart &&
+          tabCompletePrefixLow.length &&
+          prefixLow.startsWith(tabCompletePrefixLow)
+        )
+      ) {
+        tabCompleteStart = word.index;
+        tabCompletePrefixLow = prefixLow;
+        tabCompleteOptions = Object.entries(lowercaseToEmoteName)
+          .filter(([emoteLow]) => emoteLow.startsWith(prefixLow))
+          .map(([, emoteName]) => `${emoteName} `);
+        if (tabCompleteOptions.length === 0) {
+          // no prefix match found. try substring matching.
+          tabCompleteOptions = Object.entries(lowercaseToEmoteName)
+            .filter(([emoteLow]) => emoteLow.indexOf(prefixLow) !== -1)
+            .map(([, emoteName]) => `${emoteName} `);
+        }
+        tabCompleteOptions.sort();
+        tabCompleteOptionIndex = 0;
+      } else {
+        const optionCount = tabCompleteOptions.length;
+        tabCompleteOptionIndex =
+          (tabCompleteOptionIndex + (event.shiftKey ? -1 : 1) + optionCount) %
+          optionCount;
+      }
+
+      if (tabCompleteOptions.length === 0) {
+        // console.log('no matching autocomplete options for: ', prefixLow);
+        return;
+      }
+
+      const option = tabCompleteOptions[tabCompleteOptionIndex];
+      tabCompletePrefixLow = option.toLowerCase().slice(0, option.length - 1);
+      textField.value =
+        text.slice(0, tabCompleteStart) + option + text.slice(selectionStart);
+      textField.selectionStart = tabCompleteStart + option.length;
     }
 
-    if (tabCompleteOptions.length === 0) {
-      // console.log('no matching autocomplete options for: ', prefixLow);
-      return;
+    if (event.key === 'ArrowUp') {
+      event.preventDefault(); // do not go to the next element.
+      if (textHistoryPos > 0) {
+        textHistoryPos -= 1;
+      }
+      event.target.value = textHistory[textHistoryPos] || '';
     }
 
-    const option = tabCompleteOptions[tabCompleteOptionIndex];
-    tabCompletePrefixLow = option.toLowerCase().slice(0, option.length - 1);
-    textField.value =
-      text.slice(0, tabCompleteStart) + option + text.slice(selectionStart);
-    textField.selectionStart = tabCompleteStart + option.length;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault(); // do not go to the next element.
+
+      if (textHistoryPos <= textHistory.length - 1) {
+        textHistoryPos += 1;
+      }
+      event.target.value = textHistory[textHistoryPos] || '';
+    }
   }
 
   return (
@@ -195,7 +246,7 @@ export default function Home() {
                   id="speech-input"
                   label={t('Speech')}
                   variant="outlined"
-                  onKeyDown={handleTabComplete}
+                  onKeyDown={handleTextBoxKeypress}
                   fullWidth
                   autoFocus
                 />
@@ -227,6 +278,16 @@ export default function Home() {
               className={classes.bottomButtons}
             >
               {/* <Grid container item justify-content="flex-end" xs={12}> */}
+              <div className={classes.browserSource}>
+                Browser source running at:{' '}
+                <a
+                  href="http://localhost:4563"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  http://localhost:4563
+                </a>
+              </div>
               <Link to="/preferences" className={classes.link}>
                 <Button
                   id="open-preferences"
