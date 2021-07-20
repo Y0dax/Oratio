@@ -6,7 +6,7 @@ import path from 'path';
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import uEmojiParser from 'universal-emoji-parser';
-import App from './display/components/app';
+// import App from './display/components/app';
 
 const app = express();
 
@@ -51,6 +51,18 @@ const assets = JSON.parse(manifest);
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 app.get('/', (req: express.Request, res: express.Response) => {
+  // Clear require cache
+  Object.keys(require.cache).forEach(function(id) {
+    const localId = id.substr(process.cwd().length);
+    if(!localId.match(/^\/server\/app\//)) return;
+    console.log('del ', id);
+    delete require.cache[id];
+  });
+  const appModule = require('./display/components/app');
+  console.log("AAAA")
+  console.log(appModule);
+  const App = appModule.default;
+
   const component = ReactDOMServer.renderToString(React.createElement(App));
   res.render('display', { assets, component });
 });

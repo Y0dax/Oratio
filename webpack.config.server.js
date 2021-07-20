@@ -3,6 +3,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
 const nodeExternals = require('webpack-node-externals');
 const CopyPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
 
 const serverConfig = {
   name: 'server',
@@ -45,6 +46,18 @@ const clientConfig = {
   },
   mode: 'development',
   devtool: 'source-map',
+  devServer: {
+    contentBase: './dist',
+    hot: true,
+    proxy: {
+        '*': {
+            target: 'http://localhost:61299',
+        }
+    },
+    port: 8080,
+    host: '0.0.0.0',
+    hot: true,
+  },
   output: {
     path: path.resolve(`${__dirname}/assets/dist/static`),
     filename: '[name].js',
@@ -66,7 +79,9 @@ const clientConfig = {
     ],
   },
   target: 'web',
-  plugins: [new CleanWebpackPlugin(), new WebpackManifestPlugin()],
+  plugins: [new CleanWebpackPlugin(), new WebpackManifestPlugin(), new webpack.HotModuleReplacementPlugin({
+  // Options...
+})],
 };
 
 module.exports = [clientConfig, serverConfig];
