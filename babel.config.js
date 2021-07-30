@@ -42,7 +42,6 @@ module.exports = (api) => {
         { loose: false },
       ],
       require('@babel/plugin-proposal-do-expressions'),
-
       // Stage 2
       [require('@babel/plugin-proposal-decorators'), { legacy: true }],
       require('@babel/plugin-proposal-function-sent'),
@@ -51,6 +50,7 @@ module.exports = (api) => {
       require('@babel/plugin-proposal-throw-expressions'),
 
       // Stage 3
+      [require('@babel/plugin-proposal-private-methods'), { loose: true }],
       require('@babel/plugin-syntax-dynamic-import'),
       require('@babel/plugin-syntax-import-meta'),
       [require('@babel/plugin-proposal-class-properties'), { loose: true }],
