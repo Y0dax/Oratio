@@ -61,8 +61,7 @@ const useStyles = makeStyles(() =>
       marginTop: '40px',
     },
     browserSource: {
-      position: 'absolute',
-      left: '10px',
+      flexGrow: 1,
     },
   })
 );
@@ -251,7 +250,7 @@ export default function Home() {
                   autoFocus
                 />
               </Grid>
-              <Grid container item xs={12} justify="flex-end">
+              <Grid container item xs={12} justify-content="flex-end">
                 <Button
                   id="send-text"
                   variant="contained"
@@ -274,10 +273,10 @@ export default function Home() {
               container
               spacing={3}
               alignContent="flex-end"
-              justify="flex-end"
+              justify-content="flex-end"
               className={classes.bottomButtons}
             >
-              {/* <Grid container item justify="flex-end" xs={12}> */}
+              {/* <Grid container item justify-content="flex-end" xs={12}> */}
               <div className={classes.browserSource}>
                 Browser source running at:{' '}
                 <a
