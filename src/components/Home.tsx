@@ -14,6 +14,7 @@ import SettingsIcon from '@material-ui/icons/Settings';
 import { BrowserWindow, remote } from 'electron';
 import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
+import * as tmi from 'tmi.js';
 import * as Theme from './Theme';
 
 import { lowercaseToEmoteName } from './Emotes';
@@ -94,6 +95,202 @@ async function handleOpenObs() {
   }
 }
 
+class ChatInteraction {
+  client: tmi.Client;
+
+  connected: boolean;
+
+  #connecting: boolean;
+
+  #lastMessageSent: string;
+
+  #mirrorFromChat: boolean;
+
+  #mirrorToChat: boolean;
+
+  #currentChatListener: (message: string) => void | null;
+
+  constructor(public channel: string | null, public oauthToken: string | null) {
+    this.channel = channel;
+    this.oauthToken = oauthToken;
+    this.#mirrorFromChat = false;
+    this.#mirrorToChat = false;
+    this.client = new tmi.Client({
+      connection: {
+        secure: true,
+        reconnect: true,
+      },
+    });
+    this.#connecting = false;
+    this.connected = false;
+    this.#lastMessageSent = '';
+    this.#currentChatListener = null;
+    // order important since setting mirror* might need to connect/disconnect
+    this.updateSettings();
+  }
+
+  async updateSettings() {
+    this.mirrorFromChat = localStorage.getItem('mirrorFromChat') === '1';
+    this.mirrorToChat = localStorage.getItem('mirrorToChat') === '1';
+  }
+
+  get mirrorFromChat() {
+    return this.#mirrorFromChat;
+  }
+
+  set mirrorFromChat(value: boolean) {
+    if (this.#mirrorFromChat !== value) {
+      this.#mirrorFromChat = value;
+
+      const needConnection = this.#mirrorFromChat || this.#mirrorToChat;
+      if (!this.connected && needConnection) {
+        this.connect();
+      } else if (this.connected && !needConnection) {
+        this.disconnect();
+      }
+    }
+  }
+
+  get mirrorToChat() {
+    return this.#mirrorToChat;
+  }
+
+  set mirrorToChat(value: boolean) {
+    if (this.#mirrorToChat !== value) {
+      this.#mirrorToChat = value;
+
+      const needConnection = this.#mirrorFromChat || this.#mirrorToChat;
+      if (!this.connected && needConnection) {
+        this.connect();
+      } else if (this.connected && !needConnection) {
+        this.disconnect();
+      }
+    }
+  }
+
+  async connect() {
+    while (this.#connecting) {
+      // sleep for 100 ms
+      await new Promise(resolve => setTimeout(resolve, 100));
+      // console.log('waiting while connecting state: ', this.client.readyState());
+      // console.log('connected: ', this.connected, ' connecting: ', this.#connecting);
+    }
+
+    if (this.connected) {
+      return;
+    }
+
+    try {
+      this.#connecting = true;
+      await this.client.connect();
+      this.#connecting = false;
+      this.connected = true;
+    } catch (e) {
+      console.log('-------ERROR------- connecting');
+      this.#connecting = false;
+      this.connected = false;
+    }
+  }
+
+  async disconnect() {
+    if (!this.connected) {
+      return;
+    }
+
+    try {
+      await this.client.disconnect();
+      this.#connecting = false;
+      this.connected = false;
+    } catch (e) {
+      // exception gets thrown when Promise gets rejected
+      // only gets rejected if already closed
+      this.connected = false;
+    }
+  }
+
+  async changeChannel(channel: string | null): boolean {
+    if (channel === null) {
+      if (this.connected) {
+        this.disconnect();
+      }
+
+      return false;
+    }
+
+    if (!this.connected) {
+      await this.connect();
+    }
+
+    if (this.client.channels.length === 0) {
+      if (!await ChatInteraction.retryNTimes(async () => { this.client.join(channel) }, 3)) {
+        return false;
+      }
+      // channel changed
+    } else if (this.client.channels[0] !== `#${channel}`) {
+      console.log(this.client.channels);
+      let success = false;
+      success = success ||
+        await ChatInteraction.retryNTimes(
+          async () => { this.client.part(this.client.channels[0]) }, 3);
+      success = success &&
+        await ChatInteraction.retryNTimes(async () => { this.client.join(channel) }, 3);
+
+      if (!success) {
+        return false;
+      }
+    }
+
+    this.channel = channel;
+    return true;
+  }
+
+  static async retryNTimes(func: () => void, retries: number): boolean {
+    let success = false;
+    let tries = 0;
+    while (tries < retries) {
+      try {
+        await func();
+        success = true;
+        break;
+      } catch (_) {
+        tries += 1;
+      }
+    }
+
+    return success;
+  }
+
+  setOnChatEvent(sendMessageFunc: (message: string) => void) {
+    // BAD BAD BAD this also removes all listeners that tmijs uses internally
+    // this.client.removeAllListeners();
+    // remove previous listener
+    // if (this.#currentChatListener !== null) {
+    //   this.client.removeEventListener('chat', this.#currentChatListener);
+    // }
+    if (this.#currentChatListener === null) {
+      // use chat event instead of message so we don't respond to whisper and action messages (/me ..)
+      this.client.on('chat', (channel, tags, message, self) => {
+        // only mirror streamer's messages and discard the ones we sent mirrored to chat
+        // ourselves
+        // TODO check the last 3+ messages
+        if (this.channel === tags['display-name'] && message !== this.#lastMessageSent) {
+          this.#currentChatListener(message);
+        }
+      });
+    }
+
+    this.#currentChatListener = sendMessageFunc;
+  }
+
+  sendToChat(message: string) {
+    this.#lastMessageSent = message;
+  }
+}
+
+let chat = new ChatInteraction(
+  localStorage.getItem('channelName'),
+  null);
+
 export default function Home() {
   const classes = useStyles();
   const { t } = useTranslation();
@@ -120,13 +317,10 @@ export default function Home() {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSpeechSendClicked = async (event: any) => {
-    event.preventDefault();
-    const { speech } = event.currentTarget.elements;
-    if (speech.value.trim() === '') return;
+  const sendSpeech = async (phrase: string) => {
+    if (phrase.trim() === '') return;
     socket.emit('phraseSend', {
-      phrase: speech.value,
+      phrase: phrase,
       settings: {
         speed: parseInt(localStorage.getItem('textSpeed') || '75', 10),
         fontSize: parseInt(localStorage.getItem('fontSize') || '48', 10),
@@ -140,13 +334,33 @@ export default function Home() {
         ),
       },
     });
+    // post the same message in twitch chat
+    if (chat.mirrorToChat) {
+      chat.sendToChat(phrase);
+    }
     if (win !== undefined) {
-      win.webContents.send('speech', speech.value);
+      win.webContents.send('speech', phrase);
     }
 
-    addToHistory(speech.value);
+    addToHistory(phrase);
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSpeechSendClicked = async (event: any) => {
+    console.log('even', event);
+    event.preventDefault();
+    const { speech } = event.currentTarget.elements;
+    await sendSpeech(speech.value);
     speech.value = '';
   };
+
+  const channelName = localStorage.getItem('channelName');
+  chat.updateSettings();
+  chat.changeChannel(channelName)
+    .then((success) => { console.log('changed channel: ', success); })
+    .catch((e) => { console.log('failed changing channel'); });
+  console.log('after changing channel');
+  chat.setOnChatEvent(sendSpeech);
 
   // Tab-complete
   let tabCompleteStart = 0;

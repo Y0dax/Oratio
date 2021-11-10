@@ -18,6 +18,7 @@ import TextSpeedSlider from './settings/TextSpeedSlider';
 import VolumeSlider from './settings/VolumeSlider';
 import BubbleBackgroundColorPicker from './settings/BubbleBackgroundColorSlider';
 import LanguageSelector from './settings/LanguageSelector';
+import ChatSettings from './settings/ChatSettings';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -98,6 +99,9 @@ export default function Preferences() {
               </Grid>
               <Grid item xs={6}>
                 <BubbleBackgroundColorPicker />
+              </Grid>
+              <Grid item xs={6}>
+                <ChatSettings />
               </Grid>
             </Grid>
             <Grid
