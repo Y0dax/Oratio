@@ -17,7 +17,7 @@ export default function ChatSettings() {
     localStorage.getItem('mirrorFromChat') === '1'
   );
   const [mirrorToChat, setMirrorToChat] = React.useState(
-    localStorage.getItem('mirrorFromChat') === '1'
+    localStorage.getItem('mirrorToChat') === '1'
   );
 
   const handleChangeMirrorFromChat = (event: React.ChangeEvent<{ checked: boolean }>) => {

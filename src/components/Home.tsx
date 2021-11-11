@@ -106,7 +106,7 @@ class ChatInteraction {
 
   #mirrorToChat: boolean;
 
-  #currentChatListener: (message: string) => void | null;
+  #currentChatListener: (message: string, from_chat: boolean) => void | null;
 
   #oAuthToken: string | null;
 
@@ -191,6 +191,10 @@ class ChatInteraction {
       } catch (e) {
         console.log('no connection changing channels: ', e);
       }
+    } else {
+      if (this.connected) {
+        this.disconnect();
+      }
     }
   }
 
@@ -198,8 +202,6 @@ class ChatInteraction {
     while (this.#connecting) {
       // sleep for 100 ms
       await new Promise(resolve => setTimeout(resolve, 100));
-      // console.log('waiting while connecting state: ', this.client.readyState());
-      // console.log('connected: ', this.connected, ' connecting: ', this.#connecting);
     }
 
     if (this.connected) {
@@ -234,34 +236,23 @@ class ChatInteraction {
     }
   }
 
-  private async changeChannel(channel: string | null): boolean {
-    if (channel === null) {
-      if (this.connected) {
-        this.disconnect();
-      }
-
-      return false;
-    }
-
+  private async changeChannel(channel: string): boolean {
     if (!this.connected) {
       await this.connect();
     }
 
     if (this.client.channels.length === 0) {
-      if (!await ChatInteraction.retryNTimes(async () => { this.client.join(channel) }, 3)) {
+      try {
+        await this.client.join(channel);
+      } catch (e) {
         return false;
       }
       // channel changed
     } else if (this.client.channels[0] !== `#${channel}`) {
-      console.log(this.client.channels);
-      let success = false;
-      success = success ||
-        await ChatInteraction.retryNTimes(
-          async () => { this.client.part(this.client.channels[0]) }, 3);
-      success = success &&
-        await ChatInteraction.retryNTimes(async () => { this.client.join(channel) }, 3);
-
-      if (!success) {
+      try {
+        await this.client.part(this.client.channels[0]);
+        await this.client.join(channel);
+      } catch (e) {
         return false;
       }
     }
@@ -286,7 +277,7 @@ class ChatInteraction {
     return success;
   }
 
-  setOnChatEvent(sendMessageFunc: (message: string) => void) {
+  setOnChatEvent(sendMessageFunc: (message: string, from_chat: boolean) => void) {
     if (this.#currentChatListener === null) {
       // use chat event instead of message so we don't respond to whisper and action messages (/me ..)
       this.client.on('chat', (channel, tags, message, self) => {
@@ -294,8 +285,8 @@ class ChatInteraction {
         // ourselves
         // it seems like self is only true for the messages sent using the tmi.js not
         // the ones that were typed into chat etc.
-        if (!self) {
-          this.#currentChatListener(message);
+        if (!self && this.#channel === tags['username']) {
+          this.#currentChatListener(message, true);
         }
       });
     }
@@ -311,9 +302,8 @@ class ChatInteraction {
       await this.connect();
     }
 
-    console.log('sending ', message, ' to chat: ', this.#channel);
     try {
-      this.client.say(this.#channel, message);
+      await this.client.say(this.#channel, message);
     } catch (e) {
       console.log('Failed to send message "', message, '" to channel: "', this.#channel, '"');
       console.log('Error: ', e);
@@ -351,7 +341,7 @@ export default function Home() {
     }
   };
 
-  const sendSpeech = async (phrase: string) => {
+  const sendSpeech = async (phrase: string, from_chat: boolean) => {
     if (phrase.trim() === '') return;
     socket.emit('phraseSend', {
       phrase: phrase,
@@ -369,7 +359,7 @@ export default function Home() {
       },
     });
     // post the same message in twitch chat
-    if (chat.mirrorToChat) {
+    if (!from_chat && chat.mirrorToChat) {
       chat.sendToChat(phrase);
     }
     if (win !== undefined) {
@@ -381,10 +371,9 @@ export default function Home() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSpeechSendClicked = async (event: any) => {
-    console.log('even', event);
     event.preventDefault();
     const { speech } = event.currentTarget.elements;
-    await sendSpeech(speech.value);
+    await sendSpeech(speech.value, false);
     speech.value = '';
   };
 
