@@ -213,19 +213,19 @@ class ChatInteraction {
       channel !== null
     ) {
       if (this.connected || this.#connecting) {
-        this.disconnect();
+        await this.disconnect();
       }
 
       // re-connect with new identity
       this.client.opts.identity = {
         username: channel,
         password: oAuthToken,
-      }
+      };
 
       await this.connect();
     }
 
-    if (channel !== null) {
+    if (channel !== null && channel.trim().length > 0) {
       try {
         await this.changeChannel(channel);
       } catch (e) {
@@ -284,6 +284,7 @@ class ChatInteraction {
       try {
         await this.client.join(channel);
       } catch (e) {
+        this.#channel = null;
         return false;
       }
       // channel changed
@@ -292,6 +293,7 @@ class ChatInteraction {
         await this.client.part(this.client.channels[0]);
         await this.client.join(channel);
       } catch (e) {
+        this.#channel = null;
         return false;
       }
     }
@@ -328,12 +330,16 @@ class ChatInteraction {
   ) {
     if (this.#currentChatListener === null) {
       // use chat event instead of message so we don't respond to whisper and action messages (/me ..)
-      this.client.on('chat', (channel, tags, message, self) => {
+      this.client.on('chat', (_channel, tags, message, self) => {
         // only mirror streamer's messages and discard the ones we sent mirrored to chat
         // ourselves
         // it seems like self is only true for the messages sent using the tmi.js not
         // the ones that were typed into chat etc.
-        if (!self && this.#channel === tags['username']) {
+        if (
+          !self &&
+          this.#currentChatListener !== null &&
+          this.#channel === tags.username
+        ) {
           this.#currentChatListener(message, true);
         }
       });
@@ -346,8 +352,8 @@ class ChatInteraction {
     if (message.trim().length === 0) {
       return;
     }
-    if (!this.connected) {
-      await this.connect();
+    if (!this.connected || this.#channel === null) {
+      return;
     }
 
     try {
@@ -385,8 +391,12 @@ export default function Home() {
     `http://localhost:${localStorage.getItem('serverPort') || '4563'}`
   );
 
-  const [serverStatus, setServerStatus] = React.useState(chat.connectionStatus());
-  const [channelStatus, setChannelStatus] = React.useState(chat.channelStatus());
+  const [serverStatus, setServerStatus] = React.useState(
+    chat.connectionStatus()
+  );
+  const [channelStatus, setChannelStatus] = React.useState(
+    chat.channelStatus()
+  );
   chat.connectionStatusSetter = setServerStatus;
   chat.channelStatusSetter = setChannelStatus;
 
