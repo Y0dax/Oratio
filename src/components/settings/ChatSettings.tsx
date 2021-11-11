@@ -57,8 +57,9 @@ export default function ChatSettings() {
               helperText="Necessary for sending chat messages. Don't share with anyone!"
               value={oAuthToken}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setOAuthToken(e.target.value);
-                localStorage.setItem('oAuthToken', e.target.value);
+                const trimmed = e.target.value.trim();
+                setOAuthToken(trimmed);
+                localStorage.setItem('oAuthToken', trimmed);
               }}
             />
           </Grid>

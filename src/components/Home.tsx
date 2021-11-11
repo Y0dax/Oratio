@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import Grid from '@material-ui/core/Grid';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
+import IconButton from '@material-ui/core/IconButton';
+import Typography from '@material-ui/core/Typography';
 import {
   MuiThemeProvider,
   makeStyles,
@@ -11,6 +13,7 @@ import {
 import SendIcon from '@material-ui/icons/Send';
 import MicOffIcon from '@material-ui/icons/MicOff';
 import SettingsIcon from '@material-ui/icons/Settings';
+import RefreshIcon from '@material-ui/icons/Refresh';
 import { BrowserWindow, remote } from 'electron';
 import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
@@ -106,11 +109,15 @@ class ChatInteraction {
 
   #mirrorToChat: boolean;
 
-  #currentChatListener: (message: string, from_chat: boolean) => void | null;
+  #currentChatListener: ((message: string, from_chat: boolean) => void) | null;
 
   #oAuthToken: string | null;
 
   #channel: string | null;
+
+  connectionStatusSetter: ((value: string) => void) | null;
+
+  channelStatusSetter: ((value: string) => void) | null;
 
   constructor(channel: string | null, oAuthToken: string | null) {
     this.#channel = null;
@@ -126,6 +133,34 @@ class ChatInteraction {
     this.#connecting = false;
     this.connected = false;
     this.#currentChatListener = null;
+    this.connectionStatusSetter = null;
+    this.channelStatusSetter = null;
+
+    // setup connection events
+    // channel events are triggered for __every__ user so we rely on failure/success
+    // of changeChannel instead
+    // TODO why is this spasming out while the connection is already established and
+    // the channel has been joined
+    this.client.on('connected', () => {
+      if (this.connectionStatusSetter !== null) {
+        this.connectionStatusSetter('OK');
+      }
+    });
+    this.client.on('connecting', () => {
+      if (this.connectionStatusSetter !== null) {
+        this.connectionStatusSetter('CONNECTING');
+      }
+    });
+    this.client.on('disconnected', () => {
+      if (this.connectionStatusSetter !== null) {
+        this.connectionStatusSetter('DISCONNECTED');
+      }
+    });
+    this.client.on('reconnect', () => {
+      if (this.connectionStatusSetter !== null) {
+        this.connectionStatusSetter('RECONNECTING');
+      }
+    });
     this.updateIdentity(channel, oAuthToken);
     // order important since setting mirror* might need to connect/disconnect
     this.updateSettings();
@@ -171,8 +206,13 @@ class ChatInteraction {
   }
 
   async updateIdentity(channel: string | null, oAuthToken: string | null) {
-    if (oAuthToken !== null && this.#oAuthToken !== oAuthToken && channel !== null) {
-      if (this.connected || this.connecting) {
+    if (
+      oAuthToken !== null &&
+      oAuthToken.trim().length > 0 &&
+      this.#oAuthToken !== oAuthToken &&
+      channel !== null
+    ) {
+      if (this.connected || this.#connecting) {
         this.disconnect();
       }
 
@@ -191,17 +231,16 @@ class ChatInteraction {
       } catch (e) {
         console.log('no connection changing channels: ', e);
       }
-    } else {
-      if (this.connected) {
-        this.disconnect();
-      }
+    } else if (this.connected) {
+      this.disconnect();
     }
   }
 
   async connect() {
     while (this.#connecting) {
       // sleep for 100 ms
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     if (this.connected) {
@@ -236,7 +275,7 @@ class ChatInteraction {
     }
   }
 
-  private async changeChannel(channel: string): boolean {
+  private async changeChannel(channel: string): Promise<boolean> {
     if (!this.connected) {
       await this.connect();
     }
@@ -258,14 +297,21 @@ class ChatInteraction {
     }
 
     this.#channel = channel;
+    if (this.channelStatusSetter !== null) {
+      this.channelStatusSetter(`#${channel}`);
+    }
     return true;
   }
 
-  static async retryNTimes(func: () => void, retries: number): boolean {
+  static async retryNTimes(
+    func: () => void,
+    retries: number
+  ): Promise<boolean> {
     let success = false;
     let tries = 0;
     while (tries < retries) {
       try {
+        // eslint-disable-next-line no-await-in-loop
         await func();
         success = true;
         break;
@@ -277,7 +323,9 @@ class ChatInteraction {
     return success;
   }
 
-  setOnChatEvent(sendMessageFunc: (message: string, from_chat: boolean) => void) {
+  setOnChatEvent(
+    sendMessageFunc: (message: string, from_chat: boolean) => void
+  ) {
     if (this.#currentChatListener === null) {
       // use chat event instead of message so we don't respond to whisper and action messages (/me ..)
       this.client.on('chat', (channel, tags, message, self) => {
@@ -309,11 +357,26 @@ class ChatInteraction {
       console.log('Error: ', e);
     }
   }
+
+  connectionStatus(): string {
+    let connectionStatus: string;
+    if (this.connected) {
+      connectionStatus = 'OK';
+    } else if (this.#connecting) {
+      connectionStatus = 'CONNECTING';
+    } else {
+      connectionStatus = 'DISCONNECTED';
+    }
+
+    return connectionStatus;
+  }
+
+  channelStatus(): string {
+    return this.client.channels.length > 0 ? this.client.channels[0] : 'NONE';
+  }
 }
 
-const chat = new ChatInteraction(
-  localStorage.getItem('channelName'),
-  null);
+const chat = new ChatInteraction(localStorage.getItem('channelName'), null);
 
 export default function Home() {
   const classes = useStyles();
@@ -321,6 +384,11 @@ export default function Home() {
   const socket = io(
     `http://localhost:${localStorage.getItem('serverPort') || '4563'}`
   );
+
+  const [serverStatus, setServerStatus] = React.useState(chat.connectionStatus());
+  const [channelStatus, setChannelStatus] = React.useState(chat.channelStatus());
+  chat.connectionStatusSetter = setServerStatus;
+  chat.channelStatusSetter = setChannelStatus;
 
   useEffect(() => {
     return () => {
@@ -377,8 +445,9 @@ export default function Home() {
     speech.value = '';
   };
 
-  chat.updateIdentity(localStorage.getItem('channelName'),
-                      localStorage.getItem('oAuthToken'))
+  const channelName = localStorage.getItem('channelName');
+  const oAuthToken = localStorage.getItem('oAuthToken');
+  chat.updateIdentity(channelName, oAuthToken);
   chat.updateSettings();
   chat.setOnChatEvent(sendSpeech);
 
@@ -498,6 +567,47 @@ export default function Home() {
               </Grid>
             </Grid>
           </form>
+          {(chat.mirrorFromChat || chat.mirrorToChat) && (
+            <Grid
+              container
+              direction="row"
+              spacing={0}
+              style={{ marginTop: '1em' }}
+            >
+              <Grid item xs={12}>
+                <Typography variant="h5" component="h1">
+                  Chat Status
+                </Typography>
+              </Grid>
+              <Grid container item xs={12} alignItems="center">
+                Server: {serverStatus}
+                <IconButton
+                  id="reconnect-chat"
+                  color="primary"
+                  aria-label="reconnect to server"
+                  onClick={() => {
+                    chat.disconnect();
+                    chat.connect();
+                  }}
+                >
+                  <RefreshIcon />
+                </IconButton>
+              </Grid>
+              <Grid container item xs={12} alignItems="center">
+                Channel: {channelStatus}
+                <IconButton
+                  id="rejoin-channel"
+                  color="primary"
+                  aria-label="rejoin channel"
+                  onClick={() => {
+                    chat.updateIdentity(channelName, oAuthToken);
+                  }}
+                >
+                  <RefreshIcon />
+                </IconButton>
+              </Grid>
+            </Grid>
+          )}
           <div>
             <div className={classes.hello}>
               <MicOffIcon className={classes.icon} />
