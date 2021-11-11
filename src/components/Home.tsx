@@ -102,17 +102,19 @@ class ChatInteraction {
 
   #connecting: boolean;
 
-  #lastMessageSent: string;
-
   #mirrorFromChat: boolean;
 
   #mirrorToChat: boolean;
 
   #currentChatListener: (message: string) => void | null;
 
-  constructor(public channel: string | null, public oauthToken: string | null) {
-    this.channel = channel;
-    this.oauthToken = oauthToken;
+  #oAuthToken: string | null;
+
+  #channel: string | null;
+
+  constructor(channel: string | null, oAuthToken: string | null) {
+    this.#channel = null;
+    this.#oAuthToken = null;
     this.#mirrorFromChat = false;
     this.#mirrorToChat = false;
     this.client = new tmi.Client({
@@ -123,8 +125,8 @@ class ChatInteraction {
     });
     this.#connecting = false;
     this.connected = false;
-    this.#lastMessageSent = '';
     this.#currentChatListener = null;
+    this.updateIdentity(channel, oAuthToken);
     // order important since setting mirror* might need to connect/disconnect
     this.updateSettings();
   }
@@ -164,6 +166,30 @@ class ChatInteraction {
         this.connect();
       } else if (this.connected && !needConnection) {
         this.disconnect();
+      }
+    }
+  }
+
+  async updateIdentity(channel: string | null, oAuthToken: string | null) {
+    if (oAuthToken !== null && this.#oAuthToken !== oAuthToken && channel !== null) {
+      if (this.connected || this.connecting) {
+        this.disconnect();
+      }
+
+      // re-connect with new identity
+      this.client.opts.identity = {
+        username: channel,
+        password: oAuthToken,
+      }
+
+      await this.connect();
+    }
+
+    if (channel !== null) {
+      try {
+        await this.changeChannel(channel);
+      } catch (e) {
+        console.log('no connection changing channels: ', e);
       }
     }
   }
@@ -208,7 +234,7 @@ class ChatInteraction {
     }
   }
 
-  async changeChannel(channel: string | null): boolean {
+  private async changeChannel(channel: string | null): boolean {
     if (channel === null) {
       if (this.connected) {
         this.disconnect();
@@ -240,7 +266,7 @@ class ChatInteraction {
       }
     }
 
-    this.channel = channel;
+    this.#channel = channel;
     return true;
   }
 
@@ -261,19 +287,14 @@ class ChatInteraction {
   }
 
   setOnChatEvent(sendMessageFunc: (message: string) => void) {
-    // BAD BAD BAD this also removes all listeners that tmijs uses internally
-    // this.client.removeAllListeners();
-    // remove previous listener
-    // if (this.#currentChatListener !== null) {
-    //   this.client.removeEventListener('chat', this.#currentChatListener);
-    // }
     if (this.#currentChatListener === null) {
       // use chat event instead of message so we don't respond to whisper and action messages (/me ..)
       this.client.on('chat', (channel, tags, message, self) => {
         // only mirror streamer's messages and discard the ones we sent mirrored to chat
         // ourselves
-        // TODO check the last 3+ messages
-        if (this.channel === tags['display-name'] && message !== this.#lastMessageSent) {
+        // it seems like self is only true for the messages sent using the tmi.js not
+        // the ones that were typed into chat etc.
+        if (!self) {
           this.#currentChatListener(message);
         }
       });
@@ -282,12 +303,25 @@ class ChatInteraction {
     this.#currentChatListener = sendMessageFunc;
   }
 
-  sendToChat(message: string) {
-    this.#lastMessageSent = message;
+  async sendToChat(message: string) {
+    if (message.trim().length === 0) {
+      return;
+    }
+    if (!this.connected) {
+      await this.connect();
+    }
+
+    console.log('sending ', message, ' to chat: ', this.#channel);
+    try {
+      this.client.say(this.#channel, message);
+    } catch (e) {
+      console.log('Failed to send message "', message, '" to channel: "', this.#channel, '"');
+      console.log('Error: ', e);
+    }
   }
 }
 
-let chat = new ChatInteraction(
+const chat = new ChatInteraction(
   localStorage.getItem('channelName'),
   null);
 
@@ -354,12 +388,9 @@ export default function Home() {
     speech.value = '';
   };
 
-  const channelName = localStorage.getItem('channelName');
+  chat.updateIdentity(localStorage.getItem('channelName'),
+                      localStorage.getItem('oAuthToken'))
   chat.updateSettings();
-  chat.changeChannel(channelName)
-    .then((success) => { console.log('changed channel: ', success); })
-    .catch((e) => { console.log('failed changing channel'); });
-  console.log('after changing channel');
   chat.setOnChatEvent(sendSpeech);
 
   // Tab-complete

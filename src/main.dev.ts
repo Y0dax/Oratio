@@ -11,7 +11,7 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, shell, globalShortcut } from 'electron';
+import { app, BrowserWindow, shell, globalShortcut, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -166,4 +166,11 @@ app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) createWindow();
+});
+
+// event for opening the OAuth token generator for tmi.js which is required for sending
+// twitch chat messages
+ipcMain.on('open-oauth-gen-url', (event) => {
+  event.returnValue = 'URL opened!';
+  shell.openExternal('https://twitchapps.com/tmi/');
 });
