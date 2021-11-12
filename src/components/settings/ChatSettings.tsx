@@ -1,18 +1,20 @@
 import React from 'react';
 import { ipcRenderer } from 'electron';
 
-import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Button, Grid } from '@material-ui/core';
 import TextField from '@material-ui/core/TextField';
 import FormGroup from '@material-ui/core/FormGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
-import { useTranslation } from 'react-i18next';
-import * as Theme from '../Theme';
+// import { useTranslation } from 'react-i18next';
 
 export default function ChatSettings() {
-  const [channelName, setChannelName] = React.useState(localStorage.getItem('channelName') || '');
-  const [oAuthToken, setOAuthToken] = React.useState(localStorage.getItem('oAuthToken') || '');
+  const [channelName, setChannelName] = React.useState(
+    localStorage.getItem('channelName') || ''
+  );
+  const [oAuthToken, setOAuthToken] = React.useState(
+    localStorage.getItem('oAuthToken') || ''
+  );
   const [mirrorFromChat, setMirrorFromChat] = React.useState(
     localStorage.getItem('mirrorFromChat') === '1'
   );
@@ -20,13 +22,13 @@ export default function ChatSettings() {
     localStorage.getItem('mirrorToChat') === '1'
   );
 
-  const handleChangeMirrorFromChat = (event: React.ChangeEvent<{ checked: boolean }>) => {
+  const handleChangeMirrorFromChat = () => {
     const newValue = !mirrorFromChat;
     localStorage.setItem('mirrorFromChat', newValue ? '1' : '0');
     setMirrorFromChat(newValue);
   };
 
-  const handleChangeMirrorToChat = (event: React.ChangeEvent<{ checked: boolean }>) => {
+  const handleChangeMirrorToChat = () => {
     const newValue = !mirrorToChat;
     localStorage.setItem('mirrorToChat', newValue ? '1' : '0');
     setMirrorToChat(newValue);
@@ -77,7 +79,9 @@ export default function ChatSettings() {
               color="primary"
               // send event to main process to open the OAuth token generator in
               // the default browser
-              onClick={() => { ipcRenderer.sendSync('open-oauth-gen-url') }}
+              onClick={() => {
+                ipcRenderer.sendSync('open-oauth-gen-url');
+              }}
             >
               Get OAuth token
             </Button>

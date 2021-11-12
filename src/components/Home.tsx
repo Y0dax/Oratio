@@ -139,8 +139,6 @@ class ChatInteraction {
     // setup connection events
     // channel events are triggered for __every__ user so we rely on failure/success
     // of changeChannel instead
-    // TODO why is this spasming out while the connection is already established and
-    // the channel has been joined
     this.client.on('connected', () => {
       if (this.connectionStatusSetter !== null) {
         this.connectionStatusSetter('OK');
@@ -206,6 +204,11 @@ class ChatInteraction {
   }
 
   async updateIdentity(channel: string | null, oAuthToken: string | null) {
+    // nothing changed
+    if (channel === this.#channel && this.#oAuthToken === oAuthToken) {
+      return;
+    }
+
     if (
       oAuthToken !== null &&
       oAuthToken.trim().length > 0 &&
@@ -217,7 +220,7 @@ class ChatInteraction {
       }
 
       // re-connect with new identity
-      this.client.opts.identity = {
+      this.client.getOptions().identity = {
         username: channel,
         password: oAuthToken,
       };
@@ -280,7 +283,8 @@ class ChatInteraction {
       await this.connect();
     }
 
-    if (this.client.channels.length === 0) {
+    const channels = this.client.getChannels();
+    if (channels.length === 0) {
       try {
         await this.client.join(channel);
       } catch (e) {
@@ -288,9 +292,9 @@ class ChatInteraction {
         return false;
       }
       // channel changed
-    } else if (this.client.channels[0] !== `#${channel}`) {
+    } else if (channels[0] !== `#${channel}`) {
       try {
-        await this.client.part(this.client.channels[0]);
+        await this.client.part(channels[0]);
         await this.client.join(channel);
       } catch (e) {
         this.#channel = null;
@@ -330,19 +334,28 @@ class ChatInteraction {
   ) {
     if (this.#currentChatListener === null) {
       // use chat event instead of message so we don't respond to whisper and action messages (/me ..)
-      this.client.on('chat', (_channel, tags, message, self) => {
-        // only mirror streamer's messages and discard the ones we sent mirrored to chat
-        // ourselves
-        // it seems like self is only true for the messages sent using the tmi.js not
-        // the ones that were typed into chat etc.
-        if (
-          !self &&
-          this.#currentChatListener !== null &&
-          this.#channel === tags.username
-        ) {
-          this.#currentChatListener(message, true);
+      this.client.on(
+        'chat',
+        (
+          _channel: string,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          tags: { [key: string]: any },
+          message: string,
+          self: boolean
+        ) => {
+          // only mirror streamer's messages and discard the ones we sent mirrored to chat
+          // ourselves
+          // it seems like self is only true for the messages sent using the tmi.js not
+          // the ones that were typed into chat etc.
+          if (
+            !self &&
+            this.#currentChatListener !== null &&
+            this.#channel === tags.username
+          ) {
+            this.#currentChatListener(message, true);
+          }
         }
-      });
+      );
     }
 
     this.#currentChatListener = sendMessageFunc;
@@ -359,7 +372,6 @@ class ChatInteraction {
     try {
       await this.client.say(this.#channel, message);
     } catch (e) {
-      console.log('Failed to send message "', message, '" to channel: "', this.#channel, '"');
       console.log('Error: ', e);
     }
   }
@@ -378,11 +390,71 @@ class ChatInteraction {
   }
 
   channelStatus(): string {
-    return this.client.channels.length > 0 ? this.client.channels[0] : 'NONE';
+    const channels = this.client.getChannels();
+    return channels.length > 0 ? channels[0] : 'NONE';
   }
 }
 
 const chat = new ChatInteraction(localStorage.getItem('channelName'), null);
+
+function ChatStatus({
+  chatInstance,
+  channelName,
+  oAuthToken,
+}: {
+  chatInstance: ChatInteraction;
+  channelName: string | null;
+  oAuthToken: string | null;
+}) {
+  // using the set* functions will trigger a re-render of this component
+  // meaning this function will be re-executed
+  // so that's why it's better to have this as a separate component
+  const [serverStatus, setServerStatus] = React.useState(
+    chatInstance.connectionStatus()
+  );
+  const [channelStatus, setChannelStatus] = React.useState(
+    chatInstance.channelStatus()
+  );
+  chatInstance.connectionStatusSetter = setServerStatus;
+  chatInstance.channelStatusSetter = setChannelStatus;
+
+  return (
+    <Grid container direction="row" spacing={0} style={{ marginTop: '1em' }}>
+      <Grid item xs={12}>
+        <Typography variant="h5" component="h1">
+          Chat Status
+        </Typography>
+      </Grid>
+      <Grid container item xs={12} alignItems="center">
+        Server: {serverStatus}
+        <IconButton
+          id="reconnect-chat"
+          color="primary"
+          aria-label="reconnect to server"
+          onClick={() => {
+            chat.disconnect();
+            chat.connect();
+          }}
+        >
+          <RefreshIcon />
+        </IconButton>
+      </Grid>
+      <Grid container item xs={12} alignItems="center">
+        Channel: {channelStatus}
+        <IconButton
+          id="rejoin-channel"
+          color="primary"
+          aria-label="rejoin channel"
+          onClick={() => {
+            chat.updateIdentity(channelName, oAuthToken);
+          }}
+        >
+          <RefreshIcon />
+        </IconButton>
+      </Grid>
+    </Grid>
+  );
+}
 
 export default function Home() {
   const classes = useStyles();
@@ -390,15 +462,6 @@ export default function Home() {
   const socket = io(
     `http://localhost:${localStorage.getItem('serverPort') || '4563'}`
   );
-
-  const [serverStatus, setServerStatus] = React.useState(
-    chat.connectionStatus()
-  );
-  const [channelStatus, setChannelStatus] = React.useState(
-    chat.channelStatus()
-  );
-  chat.connectionStatusSetter = setServerStatus;
-  chat.channelStatusSetter = setChannelStatus;
 
   useEffect(() => {
     return () => {
@@ -422,7 +485,7 @@ export default function Home() {
   const sendSpeech = async (phrase: string, from_chat: boolean) => {
     if (phrase.trim() === '') return;
     socket.emit('phraseSend', {
-      phrase: phrase,
+      phrase,
       settings: {
         speed: parseInt(localStorage.getItem('textSpeed') || '75', 10),
         fontSize: parseInt(localStorage.getItem('fontSize') || '48', 10),
@@ -455,6 +518,8 @@ export default function Home() {
     speech.value = '';
   };
 
+  // currently this component only really udpates after the user comes back
+  // from the preferences page so it's fine to have this here for now
   const channelName = localStorage.getItem('channelName');
   const oAuthToken = localStorage.getItem('oAuthToken');
   chat.updateIdentity(channelName, oAuthToken);
@@ -578,45 +643,11 @@ export default function Home() {
             </Grid>
           </form>
           {(chat.mirrorFromChat || chat.mirrorToChat) && (
-            <Grid
-              container
-              direction="row"
-              spacing={0}
-              style={{ marginTop: '1em' }}
-            >
-              <Grid item xs={12}>
-                <Typography variant="h5" component="h1">
-                  Chat Status
-                </Typography>
-              </Grid>
-              <Grid container item xs={12} alignItems="center">
-                Server: {serverStatus}
-                <IconButton
-                  id="reconnect-chat"
-                  color="primary"
-                  aria-label="reconnect to server"
-                  onClick={() => {
-                    chat.disconnect();
-                    chat.connect();
-                  }}
-                >
-                  <RefreshIcon />
-                </IconButton>
-              </Grid>
-              <Grid container item xs={12} alignItems="center">
-                Channel: {channelStatus}
-                <IconButton
-                  id="rejoin-channel"
-                  color="primary"
-                  aria-label="rejoin channel"
-                  onClick={() => {
-                    chat.updateIdentity(channelName, oAuthToken);
-                  }}
-                >
-                  <RefreshIcon />
-                </IconButton>
-              </Grid>
-            </Grid>
+            <ChatStatus
+              chatInstance={chat}
+              channelName={channelName}
+              oAuthToken={oAuthToken}
+            />
           )}
           <div>
             <div className={classes.hello}>
