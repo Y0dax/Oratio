@@ -65,13 +65,13 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "Y0dax",
+      "owner": "omgitsmoe",
       "repo": "Oratio"
     }
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Y0dax/Oratio.git"
+    "url": "git+https://github.com/omgitsmoe/Oratio.git"
   },
   "author": {
     "name": "Oratio Maintainers",
