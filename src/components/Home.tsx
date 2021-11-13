@@ -119,7 +119,14 @@ class ChatInteraction {
 
   channelStatusSetter: ((value: string) => void) | null;
 
-  constructor(channel: string | null, oAuthToken: string | null) {
+  constructor(
+    channel: string | null,
+    oAuthToken: string | null,
+    {
+      mirrorFromChat,
+      mirrorToChat,
+    }: { mirrorFromChat: boolean; mirrorToChat: boolean }
+  ) {
     this.#channel = null;
     this.#oAuthToken = null;
     this.#mirrorFromChat = false;
@@ -161,12 +168,8 @@ class ChatInteraction {
     });
     this.updateIdentity(channel, oAuthToken);
     // order important since setting mirror* might need to connect/disconnect
-    this.updateSettings();
-  }
-
-  async updateSettings() {
-    this.mirrorFromChat = localStorage.getItem('mirrorFromChat') === '1';
-    this.mirrorToChat = localStorage.getItem('mirrorToChat') === '1';
+    this.mirrorFromChat = mirrorFromChat;
+    this.mirrorToChat = mirrorToChat;
   }
 
   get mirrorFromChat() {
@@ -209,33 +212,46 @@ class ChatInteraction {
       return;
     }
 
+    const hasChannel = channel !== null && channel.trim().length > 0;
+    if (!hasChannel) {
+      await this.disconnect();
+      return;
+    }
+
+    const hasAuth = oAuthToken !== null && oAuthToken.trim().length > 0;
     if (
-      oAuthToken !== null &&
-      oAuthToken.trim().length > 0 &&
-      this.#oAuthToken !== oAuthToken &&
-      channel !== null
+      !hasAuth &&
+      this.#oAuthToken !== null &&
+      (this.connected || this.#connecting)
     ) {
+      // no auth token passed but we were connected or in the process of connecting
+      // with one so disconnect here
+      await this.disconnect();
+      return;
+    }
+    if (hasAuth && this.#oAuthToken !== oAuthToken) {
       if (this.connected || this.#connecting) {
         await this.disconnect();
       }
 
       // re-connect with new identity
       this.client.getOptions().identity = {
-        username: channel,
-        password: oAuthToken,
+        // we already checked for null when computing hasChannel
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        username: channel!,
+        // same here
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        password: oAuthToken!,
       };
 
       await this.connect();
     }
 
-    if (channel !== null && channel.trim().length > 0) {
-      try {
-        await this.changeChannel(channel);
-      } catch (e) {
-        console.log('no connection changing channels: ', e);
-      }
-    } else if (this.connected) {
-      this.disconnect();
+    try {
+      // changeChannel connects if not already
+      await this.changeChannel(channel!);
+    } catch (e) {
+      console.log('no connection changing channels: ', e);
     }
   }
 
@@ -350,7 +366,8 @@ class ChatInteraction {
           if (
             !self &&
             this.#currentChatListener !== null &&
-            this.#channel === tags.username
+            this.#channel === tags.username &&
+            this.#mirrorFromChat
           ) {
             this.#currentChatListener(message, true);
           }
@@ -395,7 +412,10 @@ class ChatInteraction {
   }
 }
 
-const chat = new ChatInteraction(localStorage.getItem('channelName'), null);
+const chat = new ChatInteraction(localStorage.getItem('channelName'), null, {
+  mirrorFromChat: localStorage.getItem('mirrorFromChat') === '1',
+  mirrorToChat: localStorage.getItem('mirrorToChat') === '1',
+});
 
 function ChatStatus({
   chatInstance,
@@ -523,7 +543,8 @@ export default function Home() {
   const channelName = localStorage.getItem('channelName');
   const oAuthToken = localStorage.getItem('oAuthToken');
   chat.updateIdentity(channelName, oAuthToken);
-  chat.updateSettings();
+  chat.mirrorFromChat = localStorage.getItem('mirrorFromChat') === '1';
+  chat.mirrorToChat = localStorage.getItem('mirrorToChat') === '1';
   chat.setOnChatEvent(sendSpeech);
 
   // Tab-complete

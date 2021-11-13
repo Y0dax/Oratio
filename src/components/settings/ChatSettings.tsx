@@ -5,6 +5,7 @@ import { Button, Grid } from '@material-ui/core';
 import TextField from '@material-ui/core/TextField';
 import FormGroup from '@material-ui/core/FormGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
+import FormHelperText from '@material-ui/core/FormHelperText';
 import Checkbox from '@material-ui/core/Checkbox';
 // import { useTranslation } from 'react-i18next';
 
@@ -12,9 +13,13 @@ export default function ChatSettings() {
   const [channelName, setChannelName] = React.useState(
     localStorage.getItem('channelName') || ''
   );
+  // twitch username min chars is 4
+  const missingChannel = channelName === null || channelName.trim().length < 4;
   const [oAuthToken, setOAuthToken] = React.useState(
     localStorage.getItem('oAuthToken') || ''
   );
+  // OAuth token is 30chars and it's prefixed by: 'oauth:'
+  const missingAuth = oAuthToken === null || oAuthToken.trim().length !== 36;
   const [mirrorFromChat, setMirrorFromChat] = React.useState(
     localStorage.getItem('mirrorFromChat') === '1'
   );
@@ -22,14 +27,16 @@ export default function ChatSettings() {
     localStorage.getItem('mirrorToChat') === '1'
   );
 
-  const handleChangeMirrorFromChat = () => {
-    const newValue = !mirrorFromChat;
+  const handleChangeMirrorFromChat = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const newValue = e.currentTarget.checked;
     localStorage.setItem('mirrorFromChat', newValue ? '1' : '0');
     setMirrorFromChat(newValue);
   };
 
-  const handleChangeMirrorToChat = () => {
-    const newValue = !mirrorToChat;
+  const handleChangeMirrorToChat = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.currentTarget.checked;
     localStorage.setItem('mirrorToChat', newValue ? '1' : '0');
     setMirrorToChat(newValue);
   };
@@ -43,6 +50,15 @@ export default function ChatSettings() {
           label="Twitch channel name"
           value={channelName}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+            const trimmed = e.target.value.trim();
+            // twitch channel names are at least 4 chars
+            if (trimmed.length < 4) {
+              setMirrorToChat(false);
+              localStorage.setItem('mirrorToChat', '0');
+              setMirrorFromChat(false);
+              localStorage.setItem('mirrorFromChat', '0');
+            }
+
             setChannelName(e.target.value);
             // TODO mb use a delayed timer for setting it, so we don't set it on every keystroke
             // but prob not worth it
@@ -60,6 +76,12 @@ export default function ChatSettings() {
               value={oAuthToken}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 const trimmed = e.target.value.trim();
+                // OAuth token is 30chars and it's prefixed by: 'oauth:'
+                if (trimmed.length !== 36) {
+                  setMirrorToChat(false);
+                  localStorage.setItem('mirrorToChat', '0');
+                }
+
                 setOAuthToken(trimmed);
                 localStorage.setItem('oAuthToken', trimmed);
               }}
@@ -96,20 +118,31 @@ export default function ChatSettings() {
                 id="mirror-from-chat"
                 onChange={handleChangeMirrorFromChat}
                 checked={mirrorFromChat}
+                disabled={missingChannel}
               />
             }
             label="Mirror messages from twitch chat"
           />
+          {missingChannel && (
+            <FormHelperText>Missing channel name</FormHelperText>
+          )}
           <FormControlLabel
             control={
               <Checkbox
                 id="mirror-to-chat"
                 onChange={handleChangeMirrorToChat}
                 checked={mirrorToChat}
+                disabled={missingAuth || missingChannel}
               />
             }
             label="Mirror messages to twitch chat"
           />
+          {missingChannel && (
+            <FormHelperText>Missing channel name</FormHelperText>
+          )}
+          {missingAuth && (
+            <FormHelperText>Missing or invalid OAuth token</FormHelperText>
+          )}
         </FormGroup>
       </Grid>
     </Grid>
