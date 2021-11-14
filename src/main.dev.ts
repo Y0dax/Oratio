@@ -17,6 +17,13 @@ import log from 'electron-log';
 import MenuBuilder from './menu';
 import server from './server/server';
 
+declare global {
+  // needs to be var to show up on globalThis
+  // eslint-disable-next-line vars-on-top, no-var
+  var TWITCH_CLIENT_ID: string;
+}
+globalThis.TWITCH_CLIENT_ID = '2f58s8a4cjlbel33rm48kutmmdh2sm';
+
 export default class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -166,11 +173,4 @@ app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) createWindow();
-});
-
-// event for opening the OAuth token generator for tmi.js which is required for sending
-// twitch chat messages
-ipcMain.on('open-oauth-gen-url', (event) => {
-  event.returnValue = 'URL opened!';
-  shell.openExternal('https://twitchapps.com/tmi/');
 });

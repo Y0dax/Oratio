@@ -1,13 +1,31 @@
+/* eslint-disable prettier/prettier */
 import React from 'react';
-import { ipcRenderer } from 'electron';
-
+import { BrowserWindow, remote } from 'electron';
 import { Button, Grid } from '@material-ui/core';
 import TextField from '@material-ui/core/TextField';
 import FormGroup from '@material-ui/core/FormGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import Checkbox from '@material-ui/core/Checkbox';
+import IconButton from '@material-ui/core/IconButton';
+import CheckBoxOutlineBlankIcon from '@material-ui/icons/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@material-ui/icons/CheckBox';
+import { red, green } from '@material-ui/core/colors';
+import TwitchAuth from './TwitchAuth';
 // import { useTranslation } from 'react-i18next';
+
+async function handleOpenTwitchAuth(notifyChange: (value: boolean) => void) {
+  const twitch = new TwitchAuth(8005);
+  await twitch.setUpLoopback();
+  twitch.on('receivedToken', (accessToken: string, tokenType: string) => {
+    localStorage.setItem('oAuthToken', accessToken);
+    localStorage.setItem('tokenType', tokenType);
+    notifyChange(true);
+    twitch.shutDown();
+  });
+  console.log('open auth');
+  twitch.openAuthPage();
+}
 
 export default function ChatSettings() {
   const [channelName, setChannelName] = React.useState(
@@ -15,11 +33,16 @@ export default function ChatSettings() {
   );
   // twitch username min chars is 4
   const missingChannel = channelName === null || channelName.trim().length < 4;
-  const [oAuthToken, setOAuthToken] = React.useState(
-    localStorage.getItem('oAuthToken') || ''
+
+  // OAuth token is 30chars
+  const oAuthToken = localStorage.getItem('oAuthToken');
+  const [missingAuth, setMissingAuth] = React.useState(
+    // js should stop evaluation if oAuthToken is null so it's fine
+    // to assume it's not after ||
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    oAuthToken === null || oAuthToken!.trim().length !== 30
   );
-  // OAuth token is 30chars and it's prefixed by: 'oauth:'
-  const missingAuth = oAuthToken === null || oAuthToken.trim().length !== 36;
+
   const [mirrorFromChat, setMirrorFromChat] = React.useState(
     localStorage.getItem('mirrorFromChat') === '1'
   );
@@ -68,24 +91,24 @@ export default function ChatSettings() {
       </Grid>
       <Grid item xs={12}>
         <Grid container direction="row" spacing={3}>
-          <Grid item xs={6}>
-            <TextField
-              id="oauth-token"
-              label="OAuth Token"
-              helperText="Necessary for sending chat messages. Don't share with anyone!"
-              value={oAuthToken}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                const trimmed = e.target.value.trim();
-                // OAuth token is 30chars and it's prefixed by: 'oauth:'
-                if (trimmed.length !== 36) {
-                  setMirrorToChat(false);
-                  localStorage.setItem('mirrorToChat', '0');
-                }
-
-                setOAuthToken(trimmed);
-                localStorage.setItem('oAuthToken', trimmed);
-              }}
-            />
+          <Grid
+            container
+            item
+            xs={6}
+            justifyContent="flex-start"
+            alignItems="center"
+          >
+            Authorized:
+            <IconButton
+              id="auth-status"
+              style={ missingAuth ? { color: red[500] } : { color: green[500] } }
+            >
+              {missingAuth ? (
+                <CheckBoxOutlineBlankIcon />
+              ) : (
+                <CheckBoxIcon />
+              )}
+            </IconButton>
           </Grid>
           <Grid
             container
@@ -102,7 +125,7 @@ export default function ChatSettings() {
               // send event to main process to open the OAuth token generator in
               // the default browser
               onClick={() => {
-                ipcRenderer.sendSync('open-oauth-gen-url');
+                handleOpenTwitchAuth(setMissingAuth);
               }}
             >
               Get OAuth token
