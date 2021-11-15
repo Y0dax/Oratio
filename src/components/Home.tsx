@@ -122,6 +122,7 @@ class ChatInteraction {
   constructor(
     channel: string | null,
     oAuthToken: string | null,
+    clientId: string | null,
     {
       mirrorFromChat,
       mirrorToChat,
@@ -131,12 +132,26 @@ class ChatInteraction {
     this.#oAuthToken = null;
     this.#mirrorFromChat = false;
     this.#mirrorToChat = false;
-    this.client = new tmi.Client({
+    const clientOptions: tmi.Options = {
+      options: {
+        // tmi.js still uses old twitch v5 api which is deprecated and not
+        // allowed to be used by apps with new client ids
+        // so we have to disable getting emote sets, which doesn't really
+        // matter since the emote sets are twitch only anyway
+        skipUpdatingEmotesets: true,
+      },
       connection: {
         secure: true,
         reconnect: true,
       },
-    });
+    };
+    // will use tmi.js default clientId if clientId is null
+    if (clientId !== null) {
+      // we assign options above
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      clientOptions.options!.clientId = clientId;
+    }
+    this.client = new tmi.Client(clientOptions);
     this.#connecting = false;
     this.connected = false;
     this.#currentChatListener = null;
@@ -412,10 +427,15 @@ class ChatInteraction {
   }
 }
 
-const chat = new ChatInteraction(localStorage.getItem('channelName'), null, {
-  mirrorFromChat: localStorage.getItem('mirrorFromChat') === '1',
-  mirrorToChat: localStorage.getItem('mirrorToChat') === '1',
-});
+const chat: ChatInteraction = new ChatInteraction(
+  localStorage.getItem('channelName'),
+  null,
+  process.env.TWITCH_CLIENT_ID || null,
+  {
+    mirrorFromChat: localStorage.getItem('mirrorFromChat') === '1',
+    mirrorToChat: localStorage.getItem('mirrorToChat') === '1',
+  }
+);
 
 function ChatStatus({
   chatInstance,
@@ -452,8 +472,8 @@ function ChatStatus({
           color="primary"
           aria-label="reconnect to server"
           onClick={() => {
-            chat.disconnect();
-            chat.connect();
+            chatInstance.disconnect();
+            chatInstance.connect();
           }}
         >
           <RefreshIcon />
@@ -466,7 +486,7 @@ function ChatStatus({
           color="primary"
           aria-label="rejoin channel"
           onClick={() => {
-            chat.updateIdentity(channelName, oAuthToken);
+            chatInstance.updateIdentity(channelName, oAuthToken);
           }}
         >
           <RefreshIcon />

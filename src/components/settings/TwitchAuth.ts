@@ -3,8 +3,19 @@ import { remote } from 'electron';
 import express from 'express';
 import { Server } from 'node:http';
 import { EventEmitter } from 'stream';
+import * as Theme from '../Theme';
 
-const TWITCH_CLIENT_ID = remote.getGlobal('TWITCH_CLIENT_ID');
+const theme = Theme.default();
+const head = `<head>
+  <title>Oratio Authorization</title>
+  <style>
+    body {
+      background-color: ${theme.palette.background.default};
+      color: ${theme.palette.primary.main};
+    }
+  </style>
+</head>`;
+
 const authBaseURL = 'https://id.twitch.tv/oauth2/authorize';
 // the permissions we need
 const scopes = 'chat:edit chat:read';
@@ -28,14 +39,15 @@ export default class TwitchAuth extends EventEmitter {
 
   #tokenType: string | null;
 
-  constructor(public port: number) {
+  constructor(public port: number, public clientId: string) {
     super();
     this.port = port;
+    this.clientId = clientId;
     this.#app = null;
     this.#server = null;
     this.#redirectURI = encodeURIComponent(`http://localhost:${port}/auth`);
     this.#fullAuthURI = `${authBaseURL}\
-?client_id=${TWITCH_CLIENT_ID}\
+?client_id=${this.clientId}\
 &redirect_uri=${this.#redirectURI}\
 &response_type=token\
 &scope=${scopes}`;
@@ -52,11 +64,11 @@ export default class TwitchAuth extends EventEmitter {
     this.#app = express();
 
     this.#app.get('/auth', (req: express.Request, res: express.Response) => {
-      console.log('get on auth');
       res.set('Content-Type', 'text/html');
       // data is in the hash code of the address which is not sent to the server
       // so we need to redirect
       res.send(`
+        ${head}
         <script>
           document.addEventListener('DOMContentLoaded', () => {
             console.log('loc: ', window.location);
@@ -79,7 +91,10 @@ export default class TwitchAuth extends EventEmitter {
         this.emit('receivedToken', this.#accessToken, this.#tokenType);
 
         res.set('Content-Type', 'text/html');
-        res.send(`<h2>Authorization successful!</h2>`);
+        res.send(`${head}
+        <div style="margin: auto; width: 100%; text-align: center;">
+          <h1>Authorization successful!</h1>
+        </div>`);
       }
     );
 

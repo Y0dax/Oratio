@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 import React from 'react';
-import { BrowserWindow, remote } from 'electron';
+import { dialog } from 'electron';
 import { Button, Grid } from '@material-ui/core';
 import TextField from '@material-ui/core/TextField';
 import FormGroup from '@material-ui/core/FormGroup';
@@ -15,15 +15,21 @@ import TwitchAuth from './TwitchAuth';
 // import { useTranslation } from 'react-i18next';
 
 async function handleOpenTwitchAuth(notifyChange: (value: boolean) => void) {
-  const twitch = new TwitchAuth(8005);
+  const { TWITCH_CLIENT_ID } = process.env;
+  if (!TWITCH_CLIENT_ID) {
+    notifyChange(true);
+    dialog.showMessageBox({ message: "Can't authorize! Missing twitch client id!" });
+    return;
+  }
+  const twitch = new TwitchAuth(8005, TWITCH_CLIENT_ID);
   await twitch.setUpLoopback();
   twitch.on('receivedToken', (accessToken: string, tokenType: string) => {
     localStorage.setItem('oAuthToken', accessToken);
     localStorage.setItem('tokenType', tokenType);
-    notifyChange(true);
+    // value: whether token is missing
+    notifyChange(false);
     twitch.shutDown();
   });
-  console.log('open auth');
   twitch.openAuthPage();
 }
 
@@ -94,7 +100,7 @@ export default function ChatSettings() {
           <Grid
             container
             item
-            xs={6}
+            xs={12}
             justifyContent="flex-start"
             alignItems="center"
           >
@@ -113,9 +119,10 @@ export default function ChatSettings() {
           <Grid
             container
             item
-            xs={6}
+            xs={12}
             justifyContent="flex-start"
             alignItems="center"
+            style={ { paddingTop: 0 } }
           >
             <Button
               id="open-browser-auth"
@@ -128,7 +135,7 @@ export default function ChatSettings() {
                 handleOpenTwitchAuth(setMissingAuth);
               }}
             >
-              Get OAuth token
+              Authorize!
             </Button>
           </Grid>
         </Grid>

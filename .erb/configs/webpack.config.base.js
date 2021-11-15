@@ -41,6 +41,7 @@ export default {
   plugins: [
     new webpack.EnvironmentPlugin({
       NODE_ENV: 'production',
+      TWITCH_CLIENT_ID: '2f58s8a4cjlbel33rm48kutmmdh2sm',
     }),
   ],
 };
