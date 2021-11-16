@@ -63,6 +63,9 @@ export default function Preferences() {
         <div className={classes.content}>
           <form noValidate autoComplete="off">
             <Grid container direction="row" spacing={3}>
+              <Grid item xs={12}>
+                <ChatSettings />
+              </Grid>
               <Grid item xs={6}>
                 <AudioSelector />
               </Grid>
@@ -99,9 +102,6 @@ export default function Preferences() {
               </Grid>
               <Grid item xs={6}>
                 <BubbleBackgroundColorPicker />
-              </Grid>
-              <Grid item xs={12}>
-                <ChatSettings />
               </Grid>
             </Grid>
             <Grid

@@ -6,12 +6,15 @@ import {
   MuiThemeProvider,
 } from '@material-ui/core/styles';
 import { Button, Grid } from '@material-ui/core';
+import TextField from '@material-ui/core/TextField';
+import red from '@material-ui/core/colors/red';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import openExplorer from 'open-file-explorer';
 import * as https from 'https';
 import * as fs from 'fs';
 import * as Theme from './Theme';
+import TwitchApi, { Emote as EmoteCommon } from './TwitchApi';
 
 export const emoteNameToUrl: { [key: string]: string } = {};
 export const lowercaseToEmoteName: { [key: string]: string } = {};
@@ -21,20 +24,7 @@ const assetLoc =
   process.env.NODE_ENV === 'development'
     ? 'assets/emotes'
     : 'resources/assets/emotes';
-function findFiles(dir: string, return_prefix: string): string[] {
-  const files = [];
-  for (const file of fs.readdirSync(dir)) {
-    const stats = fs.statSync(`${dir}/${file}`);
-    if (stats.isDirectory()) {
-      for (const f of findFiles(`${dir}/${file}`, `${file}/`)) {
-        files.push(f);
-      }
-    } else if (file !== '.DS_Store') {
-      files.push(file);
-    }
-  }
-  return files.map((f) => return_prefix + f);
-}
+export const emoteLibPath = `${assetLoc}/emotes.json`;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function clearObject(obj: any) {
@@ -42,43 +32,117 @@ function clearObject(obj: any) {
     delete obj[k];
   }
 }
-// looks for emotes in assetLoc and puts them into the maps.
-function reloadEmotes() {
+
+function loadEmoteLib() {
   clearObject(emoteNameToUrl);
   clearObject(lowercaseToEmoteName);
-  fs.mkdirSync(assetLoc, { recursive: true });
-  for (const file of findFiles(assetLoc, `${assetLoc}/`)) {
-    const emoteName: string = file
-      .substr(file.lastIndexOf('/') + 1)
-      .split('.')[0];
-    emoteNameToUrl[emoteName] = `../${escape(file)}`;
+
+  const emotes: { [name: string]: string } = JSON.parse(
+    localStorage.getItem('emoteNameToUrl') ?? '{}'
+  );
+  for (const [k, v] of Object.entries(emotes)) {
+    emoteNameToUrl[k] = v;
+  }
+
+  for (const emoteName of Object.keys(emoteNameToUrl)) {
     lowercaseToEmoteName[emoteName.toLowerCase()] = emoteName;
   }
+}
+
+(async () => {
+  loadEmoteLib();
+  asyncLoadingFinished = true;
+})();
+
+// const charEscapes: { [char: string]: string } = {
+//   ';': '__semicol__',
+//   ':': '__colon__',
+//   '\\': '__bslash__',
+//   '/': '__fslash__',
+//   '<': '__lt__',
+//   '>': '__gt__',
+//   '|': '__bar__',
+//   '&': '__amper__',
+//   '*': '__aster__',
+// };
+
+// function escapeEmoteFileName(name: string): string {
+//   // let result = '';
+//   // for (const char of name) {
+//   //   if (char in charEscapes) {
+//   //     result += charEscapes[char];
+//   //   } else {
+//   //     result += char;
+//   //   }
+//   // }
+//   let result: string = name;
+//   for (const [char, escape] of Object.entries(charEscapes)) {
+//     result = result.replaceAll(char, escape);
+//   }
+
+//   return result;
+// }
+
+// function unescapeEmoteFileName(name: string): string {
+//   let result: string = name;
+//   for (const [char, escape] of Object.entries(charEscapes)) {
+//     result = result.replaceAll(escape, char);
+//   }
+
+//   return result;
+// }
+
+async function importEmoteLibFromDisk() {
+  clearObject(emoteNameToUrl);
+  clearObject(lowercaseToEmoteName);
+
+  let data: { [name: string]: string };
+  try {
+    data = JSON.parse(fs.readFileSync(emoteLibPath, 'utf-8'));
+  } catch (e) {
+    return;
+  }
+
+  for (const [name, filePath] of Object.entries(data)) {
+    emoteNameToUrl[name] = encodeURI(filePath);
+    lowercaseToEmoteName[name.toLowerCase()] = name;
+  }
+
   localStorage.setItem('emoteNameToUrl', JSON.stringify(emoteNameToUrl));
 }
-async function reloadEmotesAsync() {
-  reloadEmotes();
-  asyncLoadingFinished = true;
+
+async function exportEmoteLib(): Promise<boolean> {
+  fs.mkdirSync(assetLoc, { recursive: true });
+  try {
+    fs.writeFileSync(emoteLibPath, JSON.stringify(emoteNameToUrl));
+  } catch (e) {
+    return false;
+  }
+
+  return true;
 }
-reloadEmotesAsync();
 
 /**
  * Downloads file from remote HTTPS host and puts its contents to the
  * specified location but adds the appropriate file extension from the MIME type.
  */
 async function startDownload(
-  url: string,
-  agent: https.Agent,
-  filePath: string
-): Promise<string> {
+  emote: EmoteCommon,
+  groupDir: string,
+  agent: https.Agent
+): Promise<[EmoteCommon, string]> {
   return new Promise((resolve, reject) => {
+    // ids might clash, but not inside groupdirs
+    const filePath = `${groupDir}/${emote.id}`;
     const file = fs.createWriteStream(filePath);
     let fileInfo: { mime?: string; size?: number } = {};
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const request = https.get(url, { agent }, (response: any) => {
+    const request = https.get(emote.url, { agent }, (response: any) => {
       if (response.statusCode !== 200) {
-        reject(new Error(`Failed to get '${url}' (${response.statusCode})`));
+        reject(
+          new Error(`Failed to get '${emote.url}' (${response.statusCode})`)
+        );
         return;
       }
 
@@ -94,8 +158,12 @@ async function startDownload(
     file.on('finish', () => {
       const extension = (fileInfo.mime || '/png').split('/')[1];
       const filePathWithExtension = `${filePath}.${extension}`;
-      fs.renameSync(filePath, filePathWithExtension);
-      resolve(filePathWithExtension);
+      try {
+        fs.renameSync(filePath, filePathWithExtension);
+        resolve([emote, filePathWithExtension]);
+      } catch (e) {
+        reject(new Error(`Failed to rename file: ${e}`));
+      }
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,41 +180,20 @@ async function startDownload(
   });
 }
 
-function fixEmoteURL(url_: string): string {
-  let url = url_;
-  if (url.startsWith('//')) url = `https:${url}`;
-  // upgrade resolution
-  url = url.replace(/\/2x$/i, '/3x');
-  url = url.replace(/\/2\.0$/i, '/3.0');
-  if (/frankerfacez_emote\/3\/1$/i.exec(url)) url = url.replace(/\/1$/, '/2');
-  return url;
-}
-
-const emoteScrapeScript = `
-button = document.createElement('button'); document.body.append(button); button.innerText = "copy emotes";
-button.style = "display: float; width:100px; height:100px; background-color: cornflowerblue; z-index: 1000000; text-align: center; border-radius:10px";
-button.onclick = () => { navigator.clipboard.writeText(JSON.stringify([...document.querySelectorAll('#all-emotes-group .group-header')].map(g => ({groupName: g.getAttribute('data-emote-channel'),
-  emotes: Object.fromEntries([...g.querySelectorAll('.emote')].map(e => [e.getAttribute('data-emote'), e.querySelector('img').getAttribute('src')]))
-}))));
-button.innerText="emotes copied!"
-};`;
-
 async function fetchEmotes(
-  emoteGroups: { groupName: string; emotes: { [name: string]: string } }[]
-): Promise<Promise<string>[]> {
+  groupName: string,
+  emotes: EmoteCommon[],
+  agent: https.Agent
+): Promise<Promise<[EmoteCommon, string]>[]> {
   const promises = [];
-  const agent = new https.Agent({ maxSockets: 25 });
-  for (const group of emoteGroups) {
-    const groupDir = `${assetLoc}/${group.groupName}`;
-    fs.mkdirSync(groupDir, { recursive: true });
-    for (const [name, url] of Object.entries(group.emotes)) {
-      const filePath = `${groupDir}/${name}`;
-      if (url) {
-        promises.push(startDownload(fixEmoteURL(url), agent, filePath));
-      } else {
-        // eslint-disable-next-line no-console
-        console.warn('emote missing url: ', name);
-      }
+  const groupDir = `${assetLoc}/${groupName}`;
+  fs.mkdirSync(groupDir, { recursive: true });
+  for (const emote of emotes) {
+    if (emote.url) {
+      promises.push(startDownload(emote, groupDir, agent));
+    } else {
+      // eslint-disable-next-line no-console
+      console.warn('emote missing url: ', emote.name);
     }
   }
   return promises;
@@ -208,61 +255,136 @@ export default function Emotes() {
   const classes = useStyles();
   const { t } = useTranslation();
 
+  // otherwise we might get an incomplete set of our emote lib
+  if (!asyncLoadingFinished) {
+    loadEmoteLib();
+  }
+
   function openEmoteDirectory() {
     openExplorer(assetLoc);
   }
 
-  if (!asyncLoadingFinished) {
-    reloadEmotes();
-  }
-
   const [, updateState] = React.useState<Record<string, never>>();
   const forceUpdate = React.useCallback(() => updateState({}), []);
-  function reloadEmotesAndUpdate() {
-    reloadEmotes();
-    forceUpdate();
-  }
 
-  const [copyButtonTitle, setCopyButtonTitle] = React.useState<string>(
-    t('Copy Code')
-  );
-  function copyEmoteScrapeScript() {
-    navigator.clipboard.writeText(emoteScrapeScript);
-    setCopyButtonTitle(t('Code Copied!'));
-  }
+  const { TWITCH_CLIENT_ID } = process.env;
+  // users can only change this by going back to maing settings so only
+  // refreshing it here is fine;
+  const auth = localStorage.getItem('oAuthToken');
+  const tokenType = localStorage.getItem('tokenType');
+  const channelName = localStorage.getItem('channelName');
+  const canGetEmotes =
+    TWITCH_CLIENT_ID &&
+    auth &&
+    auth.length === 30 &&
+    channelName &&
+    channelName.length > 3;
+
+  const [channelEmotes, setChannelEmotes] = React.useState<{
+    value: string;
+    valid: boolean;
+  }>({ value: '', valid: false });
 
   const [importState, setImportState] = React.useState<string>('');
-  async function importEmotesFromClipboard() {
+  const [importStateChannel, setImportStateChannel] =
+    React.useState<string>('');
+  async function downloadAvailableEmotes(channel: string | null) {
+    // channel === null -> we get all available emotes for the current user
+    // otherwise we only get the twitch emotes of that channel
+
+    // select correct state setting function
+    const setState = channel === null ? setImportState : setImportStateChannel;
     try {
-      setImportState('import started');
-      const emoteGroups = JSON.parse(await navigator.clipboard.readText());
-      const promises = await fetchEmotes(emoteGroups);
-      if (promises.length === 0) {
-        setImportState(
-          'Did you forget step 3? JSON loaded but no emotes found.'
-        );
+      if (!canGetEmotes || !tokenType) {
+        setState("Missing authorization! Can't start emote download!");
         return;
       }
+
+      setState('Import started');
+      const tw = new TwitchApi(
+        // button can't be pressed if either of these are null
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        TWITCH_CLIENT_ID!,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        auth!,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        tokenType!
+      );
+
+      // also checked by canGetEmotes
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const chName = channel ?? channelName!;
+      const userId = await tw.getUserId(chName);
+      if (userId === null) {
+        setState('Could not retrieve user id from twitch servers!');
+        return;
+      }
+
+      const allEmotes: [groupName: string, emotes: EmoteCommon[]][] = [];
+      // get all emotes of current user
+      if (channel === null) {
+        // get EmoteGroups object and convert it to [groupName, emotes] using
+        // Object.entries
+        allEmotes.push(
+          ...Object.entries(await tw.getAllAvailableEmotes(userId))
+        );
+      } else {
+        allEmotes.push(
+          ...Object.entries(await tw.getTwitchChannelEmotesConverted(userId))
+        );
+      }
+
+      const agent = new https.Agent({ maxSockets: 25 });
+      const promises: Promise<[EmoteCommon, string]>[] = [];
+      for (const [groupName, emotes] of allEmotes) {
+        let newGroupName = groupName;
+        if (groupName.endsWith('Channel')) {
+          // Channel 7 chars
+          const channelStartIndex = groupName.length - 7;
+          newGroupName = `${chName}_${groupName.slice(0, channelStartIndex)}`;
+        }
+        // eslint-disable-next-line no-await-in-loop
+        promises.push(...(await fetchEmotes(newGroupName, emotes, agent)));
+      }
+      if (promises.length === 0) {
+        setState('Error: Emote APIs returned no emotes!');
+        return;
+      }
+
       let numFinished = 0;
       const progressUpdate = (message: string) => {
-        setImportState(`[${numFinished}/${promises.length}] ${message}`);
+        setState(`[${numFinished}/${promises.length}] ${message}`);
       };
       progressUpdate('Started downloads...');
       await Promise.all(
         promises.map((p) =>
-          p.then((filePathWithExtension: string) => {
+          p.then((data) => {
+            const [emote, filePathWithExtension] = data;
             numFinished += 1;
-            progressUpdate(filePathWithExtension);
+            progressUpdate(emote.name);
+
+            // add to emote map
+            // emoteNameToUrl[emoteName] = `../${escape(file)}`;
+            emoteNameToUrl[emote.name] = encodeURI(
+              `../${filePathWithExtension}`
+            );
+            lowercaseToEmoteName[emote.name.toLowerCase()] = emote.name;
             return null;
           })
         )
       );
-      progressUpdate('Done!');
+
+      localStorage.setItem('emoteNameToUrl', JSON.stringify(emoteNameToUrl));
+      if (await exportEmoteLib()) {
+        progressUpdate('Exported emote lib!');
+      } else {
+        progressUpdate('Failed to export emote lib!');
+      }
     } catch (err) {
-      setImportState(`error: ${err}`);
+      setState(`Error: ${err}`);
       throw err;
     }
-    reloadEmotesAndUpdate();
+    forceUpdate();
   }
 
   const element = (
@@ -285,80 +407,138 @@ export default function Emotes() {
             variant="contained"
             className={classes.button}
             color="primary"
-            onClick={reloadEmotesAndUpdate}
+            onClick={async () => {
+              importEmoteLibFromDisk();
+              forceUpdate();
+            }}
           >
             {t('Reload emotes')}
           </Button>
+          <Button
+            id="clear-emotes"
+            variant="contained"
+            className={classes.button}
+            style={{ backgroundColor: red[300] }}
+            onClick={async () => {
+              clearObject(emoteNameToUrl);
+              clearObject(lowercaseToEmoteName);
+              localStorage.setItem(
+                'emoteNameToUrl',
+                JSON.stringify(emoteNameToUrl)
+              );
+              forceUpdate();
+            }}
+          >
+            {t('Clear emotes')}
+          </Button>
+
+          <p>
+            Reloading emotes will only reload the &quot;database&quot; of emotes
+            that were with Oratio, so you can import the emotes folder from a
+            backup. It will not load custom emotes from disk like in previous
+            versions!
+          </p>
+          <p>
+            Clearing emotes will only clear them from the &quot;database&quot;,
+            they will remain on disk!
+          </p>
 
           <h2>Importing emotes</h2>
-          <div>
-            You can import/manage emotes manually using the buttons above and
-            placing images into that directory.
-          </div>
-          <div>
-            To import existing Twitch/BTTV/FFZ emotes you can do the following:
-            <ol>
-              <li>
-                Install BTTV in your browser if you haven&rsquo;t already.
-              </li>
-              <li> Open your twitch channel page with chat. </li>
-              <li>
-                {' '}
-                Open the BTTV emote panel by clicking the button to the left of
-                the &rdquo;Chat&rdquo; Button and scroll though to load all the
-                emotes.{' '}
-              </li>
-              <li>
-                Open the browser console: Browser menu &gt; More Tools &gt; Web
-                Developer Tools &gt; &rdquo;Console&rdquo; tab
-              </li>
-              <li>
-                Note that pasting code into the browser console is not normal
-                and you should trust or verify the script. See{' '}
-                <a
-                  href="https://en.wikipedia.org/wiki/Self-XSS"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Self-XSS
-                </a>{' '}
-                for more info.
-              </li>
-              <li>
-                Click this button to copy the script:
-                <Button
-                  id="script-copy"
-                  variant="contained"
-                  className={classes.button}
-                  color="primary"
-                  onClick={copyEmoteScrapeScript}
-                >
-                  {copyButtonTitle}
-                </Button>
-              </li>
-              <li>
-                If you trust the script, paste it in the console and hit enter.
-              </li>
-              <li>
-                A &rdquo;Copy emotes&rdquo; button should have appeared on your
-                twitch stream. Click it to copy a JSON string containing the
-                emote data.
-              </li>
-              <li>
-                Click this button to import the emotes:
-                <Button
-                  id="open-preferences"
-                  variant="contained"
-                  className={classes.button}
-                  color="primary"
-                  onClick={importEmotesFromClipboard}
-                >
-                  {t('Import Emotes')}
-                </Button>
-                <span>{importState}</span>
-              </li>
-            </ol>
-          </div>
+          <p>
+            To import existing Twitch/BTTV/FFZ/7TV emotes you need to authorize
+            Oratio on the main settings page and then use the button below to
+            download all the global emotes and the emotes for <b>your</b>{' '}
+            channel:
+          </p>
+
+          <Grid container direction="row" spacing={3}>
+            <Grid
+              container
+              item
+              xs={12}
+              justifyContent="flex-start"
+              alignItems="center"
+            >
+              <Button
+                id="get-emotes"
+                variant="contained"
+                // className={classes.button}
+                color="primary"
+                disabled={!canGetEmotes}
+                onClick={() => {
+                  downloadAvailableEmotes(null);
+                }}
+              >
+                {canGetEmotes ? 'Refresh your emotes!' : 'Not authorized!'}
+              </Button>
+              <span style={{ paddingLeft: '1em' }}>{importState}</span>
+            </Grid>
+          </Grid>
+
+          <p>
+            Since Twitch does not allow anyone to get information about your
+            subscribed subscribed subscribed channels, you can enter a channel
+            name below. the button will download all the emotes of that channel:
+          </p>
+
+          <Grid container direction="row" spacing={1}>
+            <Grid
+              container
+              item
+              // grid has 12 cols -> we can use to fill an entire row
+              // so we don't have to create a new one
+              // or use an empty col with a width of 6cols
+              xs={6}
+              justifyContent="flex-start"
+              alignItems="center"
+            >
+              <TextField
+                id="channel-name"
+                fullWidth
+                label="Twitch channel name"
+                helperText={`${
+                  channelEmotes.valid ? 'Valid' : 'Missing or invalid'
+                }`}
+                value={channelEmotes.value}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const trimmed = e.target.value.trim();
+                  // twitch channel names are at least 4 chars
+                  setChannelEmotes({
+                    value: trimmed,
+                    valid: trimmed.length > 3,
+                  });
+                }}
+              />
+            </Grid>
+            <Grid
+              item
+              // or use an empty col with a width of 6cols
+              xs={6}
+            />
+            <Grid
+              container
+              item
+              // grid has 12 cols -> we can use to fill an entire row
+              // so we don't have to create a new one
+              xs={12}
+              justifyContent="flex-start"
+              alignItems="center"
+            >
+              <Button
+                id="get-emotes-channel"
+                variant="contained"
+                // className={classes.button}
+                color="primary"
+                disabled={!canGetEmotes || !channelEmotes.valid}
+                onClick={() => {
+                  downloadAvailableEmotes(channelEmotes.value);
+                }}
+              >
+                {canGetEmotes ? 'Add Emotes!' : 'Not authorized!'}
+              </Button>
+              <span style={{ paddingLeft: '1em' }}>{importStateChannel}</span>
+            </Grid>
+          </Grid>
 
           <h2>Emote Previews</h2>
           <table>
