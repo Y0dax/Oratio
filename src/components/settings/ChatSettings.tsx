@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 import React from 'react';
-import { dialog } from 'electron';
+import { ipcRenderer } from 'electron';
 import { Button, Grid } from '@material-ui/core';
 import TextField from '@material-ui/core/TextField';
 import FormGroup from '@material-ui/core/FormGroup';
@@ -11,26 +11,24 @@ import IconButton from '@material-ui/core/IconButton';
 import CheckBoxOutlineBlankIcon from '@material-ui/icons/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@material-ui/icons/CheckBox';
 import { red, green } from '@material-ui/core/colors';
-import TwitchAuth from './TwitchAuth';
 // import { useTranslation } from 'react-i18next';
 
 async function handleOpenTwitchAuth(notifyChange: (value: boolean) => void) {
   const { TWITCH_CLIENT_ID } = process.env;
+
+  // tell main process to start loopback server and open auth url in default browser
+  ipcRenderer.send('authLoopback');
   if (!TWITCH_CLIENT_ID) {
-    notifyChange(true);
-    dialog.showMessageBox({ message: "Can't authorize! Missing twitch client id!" });
+    // main will warn with dialog box about missing client id and then stop
     return;
   }
-  const twitch = new TwitchAuth(8005, TWITCH_CLIENT_ID);
-  await twitch.setUpLoopback();
-  twitch.on('receivedToken', (accessToken: string, tokenType: string) => {
-    localStorage.setItem('oAuthToken', accessToken);
-    localStorage.setItem('tokenType', tokenType);
+
+  ipcRenderer.on('receivedToken', (_event, args) => {
+    localStorage.setItem('oAuthToken', args.accessToken);
+    localStorage.setItem('tokenType', args.tokenType);
     // value: whether token is missing
     notifyChange(false);
-    twitch.shutDown();
   });
-  twitch.openAuthPage();
 }
 
 export default function ChatSettings() {

@@ -11,11 +11,19 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, shell, globalShortcut, ipcMain } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  shell,
+  globalShortcut,
+  ipcMain,
+  dialog,
+} from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import server from './server/server';
+import TwitchAuth from './TwitchAuth';
 
 export default class AppUpdater {
   constructor() {
@@ -166,4 +174,23 @@ app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) createWindow();
+});
+
+ipcMain.on('authLoopback', async (event, _arg) => {
+  const { TWITCH_CLIENT_ID } = process.env;
+  if (!TWITCH_CLIENT_ID) {
+    dialog.showMessageBox({
+      message: "Can't authorize! Missing twitch client id!",
+    });
+    return;
+  }
+
+  const twitch = new TwitchAuth(8005, TWITCH_CLIENT_ID);
+  await twitch.setUpLoopback();
+  twitch.on('receivedToken', (accessToken: string, tokenType: string) => {
+    // can't use localStorage in main so we sent this back to the renderer
+    event.reply('receivedToken', { accessToken, tokenType });
+    twitch.shutDown();
+  });
+  twitch.openAuthPage();
 });

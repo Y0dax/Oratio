@@ -1,9 +1,9 @@
-import { remote } from 'electron';
+import { shell } from 'electron';
 
 import express from 'express';
 import { Server } from 'node:http';
 import { EventEmitter } from 'stream';
-import * as Theme from '../Theme';
+import * as Theme from './components/Theme';
 
 const theme = Theme.default();
 const head = `<head>
@@ -57,13 +57,13 @@ export default class TwitchAuth extends EventEmitter {
 
   openAuthPage() {
     // navigate user to auth url in their default browser
-    remote.require('electron').shell.openExternal(this.#fullAuthURI);
+    shell.openExternal(this.#fullAuthURI);
   }
 
   async setUpLoopback() {
     this.#app = express();
 
-    this.#app.get('/auth', (req: express.Request, res: express.Response) => {
+    this.#app.get('/auth', (_req: express.Request, res: express.Response) => {
       res.set('Content-Type', 'text/html');
       // data is in the hash code of the address which is not sent to the server
       // so we need to redirect
