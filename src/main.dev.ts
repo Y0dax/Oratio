@@ -185,12 +185,18 @@ ipcMain.on('authLoopback', async (event, _arg) => {
     return;
   }
 
-  const twitch = new TwitchAuth(8005, TWITCH_CLIENT_ID);
-  await twitch.setUpLoopback();
+  const validPorts = [8005, 8006, 8007, 8008, 8009, 8010];
+  const twitch = new TwitchAuth(validPorts, TWITCH_CLIENT_ID);
+  twitch.on('allPortsInUse', () => {
+    dialog.showMessageBox({
+      message: `All ports (${validPorts}) in use!`,
+    });
+  });
+
   twitch.on('receivedToken', (accessToken: string, tokenType: string) => {
     // can't use localStorage in main so we sent this back to the renderer
     event.reply('receivedToken', { accessToken, tokenType });
     twitch.shutDown();
   });
-  twitch.openAuthPage();
+  await twitch.setUpLoopback();
 });

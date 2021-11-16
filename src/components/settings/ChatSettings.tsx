@@ -13,7 +13,7 @@ import CheckBoxIcon from '@material-ui/icons/CheckBox';
 import { red, green } from '@material-ui/core/colors';
 // import { useTranslation } from 'react-i18next';
 
-async function handleOpenTwitchAuth(notifyChange: (value: boolean) => void) {
+async function handleOpenTwitchAuth(notifyChange: (tokenMissing: boolean) => void) {
   const { TWITCH_CLIENT_ID } = process.env;
 
   // tell main process to start loopback server and open auth url in default browser
@@ -26,7 +26,7 @@ async function handleOpenTwitchAuth(notifyChange: (value: boolean) => void) {
   ipcRenderer.on('receivedToken', (_event, args) => {
     localStorage.setItem('oAuthToken', args.accessToken);
     localStorage.setItem('tokenType', args.tokenType);
-    // value: whether token is missing
+    // whether token is missing
     notifyChange(false);
   });
 }

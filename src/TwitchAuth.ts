@@ -1,6 +1,7 @@
 import { shell } from 'electron';
 
 import express from 'express';
+import http from 'http';
 import { Server } from 'node:http';
 import { EventEmitter } from 'stream';
 import * as Theme from './components/Theme';
@@ -27,37 +28,56 @@ interface AuthData {
 }
 
 export default class TwitchAuth extends EventEmitter {
+  // will be -1 if not set yet
+  port: number;
+
+  // we have to register a redirect url for the twitch app, so
+  // we can only use 10 max ports
+  #validPorts: number[];
+
   #app: express.Express | null;
 
   #server: Server | null;
-
-  #redirectURI: string;
-
-  #fullAuthURI: string;
 
   #accessToken: string | null;
 
   #tokenType: string | null;
 
-  constructor(public port: number, public clientId: string) {
+  constructor(validPorts: number[], public clientId: string) {
     super();
-    this.port = port;
+    this.#validPorts = validPorts;
+    this.port = -1;
     this.clientId = clientId;
     this.#app = null;
     this.#server = null;
-    this.#redirectURI = encodeURIComponent(`http://localhost:${port}/auth`);
-    this.#fullAuthURI = `${authBaseURL}\
-?client_id=${this.clientId}\
-&redirect_uri=${this.#redirectURI}\
-&response_type=token\
-&scope=${scopes}`;
     this.#accessToken = null;
     this.#tokenType = null;
+
+    // server is listening -> open page in browser
+    this.on('listening', (port: number) => {
+      this.openAuthPage();
+    });
+  }
+
+  static redirectURI(port: number): string {
+    return encodeURIComponent(`http://localhost:${port}/auth`);
+  }
+
+  fullAuthURI(port: number): string {
+    return `${authBaseURL}\
+?client_id=${this.clientId}\
+&redirect_uri=${TwitchAuth.redirectURI(port)}\
+&response_type=token\
+&scope=${scopes}`;
   }
 
   openAuthPage() {
+    // port not set if < 0
+    if (this.port < 0) {
+      return;
+    }
     // navigate user to auth url in their default browser
-    shell.openExternal(this.#fullAuthURI);
+    shell.openExternal(this.fullAuthURI(this.port));
   }
 
   async setUpLoopback() {
@@ -98,9 +118,35 @@ export default class TwitchAuth extends EventEmitter {
       }
     );
 
-    this.#server = this.#app.listen(this.port, () => {
+    this.#server = http.createServer(this.#app);
+    this.startServer(this.#server, 0);
+  }
+
+  startServer(server: http.Server, validPortIndex: number) {
+    const onSuccess = () => {
+      this.port = this.#validPorts[validPortIndex];
       console.log(`Auth loopback listening on http://localhost:${this.port}`);
-    });
+      this.emit('listening', this.port);
+    };
+
+    const onError = (err: NodeJS.ErrnoException) => {
+      server
+        .removeListener('error', onError)
+        .removeListener('listening', onSuccess);
+
+      if (err.code === 'EADDRINUSE') {
+        if (validPortIndex === this.#validPorts.length - 1) {
+          this.emit('allValidPortsInUse');
+        } else {
+          this.startServer(server, validPortIndex + 1);
+        }
+      }
+    };
+
+    server
+      .listen(this.#validPorts[validPortIndex])
+      .on('error', onError)
+      .on('listening', onSuccess);
   }
 
   async shutDown() {
