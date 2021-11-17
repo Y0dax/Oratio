@@ -1,4 +1,5 @@
 import React from 'react';
+import { ipcRenderer } from 'electron';
 
 import {
   makeStyles,
@@ -281,15 +282,10 @@ export default function Emotes() {
   const { TWITCH_CLIENT_ID } = process.env;
   // users can only change this by going back to maing settings so only
   // refreshing it here is fine;
-  const auth = localStorage.getItem('oAuthToken');
-  const tokenType = localStorage.getItem('tokenType');
+  const hasAuth = localStorage.getItem('twitchAuth') === '1';
   const channelName = localStorage.getItem('channelName');
   const canGetEmotes =
-    TWITCH_CLIENT_ID &&
-    auth &&
-    auth.length === 30 &&
-    channelName &&
-    channelName.length > 3;
+    TWITCH_CLIENT_ID && hasAuth && channelName && channelName.length > 3;
 
   const [channelEmotes, setChannelEmotes] = React.useState<{
     value: string;
@@ -306,20 +302,24 @@ export default function Emotes() {
     // select correct state setting function
     const setState = channel === null ? setImportState : setImportStateChannel;
     try {
-      if (!canGetEmotes || !tokenType) {
+      if (!canGetEmotes) {
         setState("Missing authorization! Can't start emote download!");
         return;
       }
 
       setState('Import started');
+
+      const authToken = ipcRenderer.sendSync('getTwitchToken', channelName);
+      if (authToken === null) {
+        setState('Could not get authorization! Re-authorization needed!');
+        return;
+      }
+
       const tw = new TwitchApi(
         // button can't be pressed if either of these are null
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         TWITCH_CLIENT_ID!,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        auth!,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        tokenType!
+        authToken
       );
 
       // also checked by canGetEmotes
@@ -382,7 +382,7 @@ export default function Emotes() {
             // so filePathWithExtension currently is the electron path and
             // now we need to remove 'resources' from the url and add '../'
             emoteNameToUrl[emote.name] = `../${encodeURI(
-              filePathWithExtension.substr('resources'.length)
+              filePathWithExtension.replace(/^resources\//, '')
             )}`;
             lowercaseToEmoteName[emote.name.toLowerCase()] = emote.name;
             return null;

@@ -21,6 +21,7 @@ import {
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
+import keytar from 'keytar';
 import MenuBuilder from './menu';
 import server from './server/server';
 import TwitchAuth from './TwitchAuth';
@@ -176,7 +177,7 @@ app.on('activate', () => {
   if (mainWindow === null) createWindow();
 });
 
-ipcMain.on('authLoopback', async (event, _arg) => {
+ipcMain.on('authLoopback', async (event, channelName) => {
   const { TWITCH_CLIENT_ID } = process.env;
   if (!TWITCH_CLIENT_ID) {
     dialog.showMessageBox({
@@ -193,10 +194,15 @@ ipcMain.on('authLoopback', async (event, _arg) => {
     });
   });
 
-  twitch.on('receivedToken', (accessToken: string, tokenType: string) => {
-    // can't use localStorage in main so we sent this back to the renderer
-    event.reply('receivedToken', { accessToken, tokenType });
+  twitch.on('receivedToken', (accessToken: string, _tokenType: string) => {
+    keytar.setPassword('Oratio-Twitch', channelName, accessToken);
+    event.reply('receivedToken');
     twitch.shutDown();
   });
   await twitch.setUpLoopback();
+});
+
+// TODO: how long does getPassword usually take? should we use this as async?
+ipcMain.on('getTwitchToken', async (event, channelName: string) => {
+  event.returnValue = await keytar.getPassword('Oratio-Twitch', channelName);
 });

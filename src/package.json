@@ -14,6 +14,8 @@
     "postinstall": "yarn electron-rebuild"
   },
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "keytar": "7.6"
+  },
   "devDependencies": {}
 }

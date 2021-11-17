@@ -106,20 +106,15 @@ export default class TwitchApi {
 
   readonly baseURI7TV: string = 'https://api.7tv.app/v2';
 
+  readonly tokenType: string = 'Bearer';
+
   #authHeaders: { Authorization: string; 'Client-Id': string };
 
-  constructor(
-    public clientId: string,
-    public authToken: string,
-    public tokenType: string
-  ) {
+  constructor(public clientId: string, public authToken: string) {
     this.clientId = clientId;
     this.authToken = authToken;
-    this.tokenType = tokenType;
     this.#authHeaders = {
-      Authorization: `${tokenType.substr(0, 1).toUpperCase()}${tokenType
-        .toLowerCase()
-        .substr(1)} ${authToken}`,
+      Authorization: `${this.tokenType} ${authToken}`,
       'Client-Id': clientId,
     };
   }

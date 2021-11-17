@@ -14,7 +14,7 @@ import SendIcon from '@material-ui/icons/Send';
 import MicOffIcon from '@material-ui/icons/MicOff';
 import SettingsIcon from '@material-ui/icons/Settings';
 import RefreshIcon from '@material-ui/icons/Refresh';
-import { BrowserWindow, remote } from 'electron';
+import { BrowserWindow, remote, ipcRenderer } from 'electron';
 import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
 import * as tmi from 'tmi.js';
@@ -561,7 +561,7 @@ export default function Home() {
   // currently this component only really udpates after the user comes back
   // from the preferences page so it's fine to have this here for now
   const channelName = localStorage.getItem('channelName');
-  const oAuthToken = localStorage.getItem('oAuthToken');
+  const oAuthToken = ipcRenderer.sendSync('getTwitchToken', channelName);
   chat.updateIdentity(channelName, oAuthToken);
   chat.mirrorFromChat = localStorage.getItem('mirrorFromChat') === '1';
   chat.mirrorToChat = localStorage.getItem('mirrorToChat') === '1';

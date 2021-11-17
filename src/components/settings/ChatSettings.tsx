@@ -13,19 +13,18 @@ import CheckBoxIcon from '@material-ui/icons/CheckBox';
 import { red, green } from '@material-ui/core/colors';
 // import { useTranslation } from 'react-i18next';
 
-async function handleOpenTwitchAuth(notifyChange: (tokenMissing: boolean) => void) {
+async function handleOpenTwitchAuth(channelName: string, notifyChange: (tokenMissing: boolean) => void) {
   const { TWITCH_CLIENT_ID } = process.env;
 
   // tell main process to start loopback server and open auth url in default browser
-  ipcRenderer.send('authLoopback');
+  ipcRenderer.send('authLoopback', channelName);
   if (!TWITCH_CLIENT_ID) {
     // main will warn with dialog box about missing client id and then stop
     return;
   }
 
-  ipcRenderer.on('receivedToken', (_event, args) => {
-    localStorage.setItem('oAuthToken', args.accessToken);
-    localStorage.setItem('tokenType', args.tokenType);
+  ipcRenderer.on('receivedToken', () => {
+    localStorage.setItem('twitchAuth', '1');
     // whether token is missing
     notifyChange(false);
   });
@@ -38,13 +37,8 @@ export default function ChatSettings() {
   // twitch username min chars is 4
   const missingChannel = channelName === null || channelName.trim().length < 4;
 
-  // OAuth token is 30chars
-  const oAuthToken = localStorage.getItem('oAuthToken');
   const [missingAuth, setMissingAuth] = React.useState(
-    // js should stop evaluation if oAuthToken is null so it's fine
-    // to assume it's not after ||
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    oAuthToken === null || oAuthToken!.trim().length !== 30
+    localStorage.getItem('twitchAuth') !== '1'
   );
 
   const [mirrorFromChat, setMirrorFromChat] = React.useState(
@@ -130,7 +124,7 @@ export default function ChatSettings() {
               // send event to main process to open the OAuth token generator in
               // the default browser
               onClick={() => {
-                handleOpenTwitchAuth(setMissingAuth);
+                handleOpenTwitchAuth(channelName, setMissingAuth);
               }}
             >
               Authorize!
