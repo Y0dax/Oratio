@@ -293,14 +293,27 @@ export default function Emotes() {
   }>({ value: '', valid: false });
 
   const [importState, setImportState] = React.useState<string>('');
+  const [importStateGlobal, setImportStateGlobal] = React.useState<string>('');
   const [importStateChannel, setImportStateChannel] =
     React.useState<string>('');
-  async function downloadAvailableEmotes(channel: string | null) {
+  async function downloadAvailableEmotes(
+    channel: string | null,
+    global?: boolean
+  ) {
     // channel === null -> we get all available emotes for the current user
     // otherwise we only get the twitch emotes of that channel
+    if (channel !== null && global) {
+      throw new Error('channel and global parameters are mutually exclusive!');
+    }
 
     // select correct state setting function
-    const setState = channel === null ? setImportState : setImportStateChannel;
+    let setState: (value: string) => void;
+    if (!global) {
+      setState = channel === null ? setImportState : setImportStateChannel;
+    } else {
+      setState = setImportStateGlobal;
+    }
+
     try {
       if (!canGetEmotes) {
         setState("Missing authorization! Can't start emote download!");
@@ -325,8 +338,8 @@ export default function Emotes() {
       // also checked by canGetEmotes
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const chName = channel ?? channelName!;
-      const userId = await tw.getUserId(chName);
-      if (userId === null) {
+      const userId = global ? null : await tw.getUserId(chName);
+      if (userId === null && !global) {
         setState('Could not retrieve user id from twitch servers!');
         return;
       }
@@ -336,12 +349,18 @@ export default function Emotes() {
       if (channel === null) {
         // get EmoteGroups object and convert it to [groupName, emotes] using
         // Object.entries
-        allEmotes.push(
-          ...Object.entries(await tw.getAllAvailableEmotes(userId))
-        );
+        if (global === true) {
+          allEmotes.push(...Object.entries(await tw.getGlobalEmotes()));
+        } else {
+          // will not be null see the if right after userId
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          allEmotes.push(...Object.entries(await tw.getChannelEmotes(userId!)));
+        }
       } else {
         allEmotes.push(
-          ...Object.entries(await tw.getTwitchChannelEmotesConverted(userId))
+          // will not be null see the if right after userId
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          ...Object.entries(await tw.getTwitchChannelEmotesConverted(userId!))
         );
       }
 
@@ -380,7 +399,8 @@ export default function Emotes() {
             // node/electron paths though are relative to the exe which is
             // where 'resources' lives as well
             // so filePathWithExtension currently is the electron path and
-            // now we need to remove 'resources' from the url and add '../'
+            // now we need to remove 'resources' from the url (not in a dev env though)
+            // and add '../'
             emoteNameToUrl[emote.name] = `../${encodeURI(
               filePathWithExtension.replace(/^resources\//, '')
             )}`;
@@ -448,24 +468,11 @@ export default function Emotes() {
             {t('Clear emotes')}
           </Button>
 
-          <p>
-            Reloading emotes will only reload the &quot;database&quot; of emotes
-            that were with Oratio, so you can import the emotes folder from a
-            backup. It will not load custom emotes from disk like in previous
-            versions!
-          </p>
-          <p>
-            Clearing emotes will only clear them from the &quot;database&quot;,
-            they will remain on disk!
-          </p>
+          <p>{t('Reload emotes explanation')}</p>
+          <p>{t('Clear emotes explanation')}</p>
 
-          <h2>Importing emotes</h2>
-          <p>
-            To import existing Twitch/BTTV/FFZ/7TV emotes you need to authorize
-            Oratio on the main settings page and then use the button below to
-            download all the global emotes and the emotes for <b>your</b>{' '}
-            channel:
-          </p>
+          <h2>{t('Importing emotes')}</h2>
+          <p>{t('Import emotes explanation')}</p>
 
           <Grid container direction="row" spacing={3}>
             <Grid
@@ -482,20 +489,44 @@ export default function Emotes() {
                 color="primary"
                 disabled={!canGetEmotes}
                 onClick={() => {
-                  downloadAvailableEmotes(null);
+                  downloadAvailableEmotes(null, true);
                 }}
               >
-                {canGetEmotes ? 'Refresh your emotes!' : 'Not authorized!'}
+                {canGetEmotes
+                  ? t('Refresh global emotes!')
+                  : t('Not authorized!')}
+              </Button>
+              <span style={{ paddingLeft: '1em' }}>{importStateGlobal}</span>
+            </Grid>
+          </Grid>
+
+          <Grid container direction="row" spacing={3}>
+            <Grid
+              container
+              item
+              xs={12}
+              justifyContent="flex-start"
+              alignItems="center"
+            >
+              <Button
+                id="get-emotes"
+                variant="contained"
+                // className={classes.button}
+                color="primary"
+                disabled={!canGetEmotes}
+                onClick={() => {
+                  downloadAvailableEmotes(null, false);
+                }}
+              >
+                {canGetEmotes
+                  ? t('Refresh your channel emotes!')
+                  : t('Not authorized!')}
               </Button>
               <span style={{ paddingLeft: '1em' }}>{importState}</span>
             </Grid>
           </Grid>
 
-          <p>
-            Since Twitch does not allow anyone to get information about your
-            subscribed subscribed subscribed channels, you can enter a channel
-            name below. the button will download all the emotes of that channel:
-          </p>
+          <p>{t('Twitch channel explanation')}</p>
 
           <Grid container direction="row" spacing={1}>
             <Grid
@@ -511,9 +542,9 @@ export default function Emotes() {
               <TextField
                 id="channel-name"
                 fullWidth
-                label="Twitch channel name"
+                label={t('Twitch channel name')}
                 helperText={`${
-                  channelEmotes.valid ? 'Valid' : 'Missing or invalid'
+                  channelEmotes.valid ? t('Valid') : t('Missing or invalid')
                 }`}
                 value={channelEmotes.value}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -550,13 +581,13 @@ export default function Emotes() {
                   downloadAvailableEmotes(channelEmotes.value);
                 }}
               >
-                {canGetEmotes ? 'Add Emotes!' : 'Not authorized!'}
+                {canGetEmotes ? t('Add Emotes!') : t('Not authorized!')}
               </Button>
               <span style={{ paddingLeft: '1em' }}>{importStateChannel}</span>
             </Grid>
           </Grid>
 
-          <h2>Emote Previews</h2>
+          <h2>{t('Emote Previews')}</h2>
           <table>
             <tbody>
               {Object.keys(emoteNameToUrl)

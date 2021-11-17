@@ -194,6 +194,7 @@ ipcMain.on('authLoopback', async (event, channelName) => {
     });
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   twitch.on('receivedToken', (accessToken: string, _tokenType: string) => {
     keytar.setPassword('Oratio-Twitch', channelName, accessToken);
     event.reply('receivedToken');

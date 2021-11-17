@@ -61,12 +61,6 @@ const useStyles = makeStyles(() =>
       marginLeft: '5px',
       marginRight: '5px',
     },
-    bottomButtons: {
-      marginTop: '40px',
-    },
-    browserSource: {
-      flexGrow: 1,
-    },
   })
 );
 
@@ -115,9 +109,9 @@ class ChatInteraction {
 
   #channel: string | null;
 
-  connectionStatusSetter: ((value: string) => void) | null;
+  connectionStatusCallback: ((value: string) => void) | null;
 
-  channelStatusSetter: ((value: string) => void) | null;
+  channelStatusCallback: ((value: string) => void) | null;
 
   constructor(
     channel: string | null,
@@ -155,30 +149,31 @@ class ChatInteraction {
     this.#connecting = false;
     this.connected = false;
     this.#currentChatListener = null;
-    this.connectionStatusSetter = null;
-    this.channelStatusSetter = null;
+    this.connectionStatusCallback = null;
+    this.channelStatusCallback = null;
 
     // setup connection events
     // channel events are triggered for __every__ user so we rely on failure/success
     // of changeChannel instead
+    // string values used below are the i18next translation keys
     this.client.on('connected', () => {
-      if (this.connectionStatusSetter !== null) {
-        this.connectionStatusSetter('OK');
+      if (this.connectionStatusCallback !== null) {
+        this.connectionStatusCallback('ChatStatus OK');
       }
     });
     this.client.on('connecting', () => {
-      if (this.connectionStatusSetter !== null) {
-        this.connectionStatusSetter('CONNECTING');
+      if (this.connectionStatusCallback !== null) {
+        this.connectionStatusCallback('ChatStatus Connecting');
       }
     });
     this.client.on('disconnected', () => {
-      if (this.connectionStatusSetter !== null) {
-        this.connectionStatusSetter('DISCONNECTED');
+      if (this.connectionStatusCallback !== null) {
+        this.connectionStatusCallback('ChatStatus Disconnected');
       }
     });
     this.client.on('reconnect', () => {
-      if (this.connectionStatusSetter !== null) {
-        this.connectionStatusSetter('RECONNECTING');
+      if (this.connectionStatusCallback !== null) {
+        this.connectionStatusCallback('ChatStatus Reconnecting');
       }
     });
     this.updateIdentity(channel, oAuthToken);
@@ -264,6 +259,8 @@ class ChatInteraction {
 
     try {
       // changeChannel connects if not already
+      // we know channel is not null due to hasChannel check above
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       await this.changeChannel(channel!);
     } catch (e) {
       console.log('no connection changing channels: ', e);
@@ -287,7 +284,7 @@ class ChatInteraction {
       this.#connecting = false;
       this.connected = true;
     } catch (e) {
-      console.log('-------ERROR------- connecting');
+      console.warn('-------ERROR------- connecting');
       this.#connecting = false;
       this.connected = false;
     }
@@ -334,8 +331,8 @@ class ChatInteraction {
     }
 
     this.#channel = channel;
-    if (this.channelStatusSetter !== null) {
-      this.channelStatusSetter(`#${channel}`);
+    if (this.channelStatusCallback !== null) {
+      this.channelStatusCallback(`#${channel}`);
     }
     return true;
   }
@@ -423,7 +420,8 @@ class ChatInteraction {
 
   channelStatus(): string {
     const channels = this.client.getChannels();
-    return channels.length > 0 ? channels[0] : 'NONE';
+    // string for NoChannel is a translation key
+    return channels.length > 0 ? channels[0] : 'ChatStatus NoChannel';
   }
 }
 
@@ -446,6 +444,7 @@ function ChatStatus({
   channelName: string | null;
   oAuthToken: string | null;
 }) {
+  const { t } = useTranslation();
   // using the set* functions will trigger a re-render of this component
   // meaning this function will be re-executed
   // so that's why it's better to have this as a separate component
@@ -455,8 +454,18 @@ function ChatStatus({
   const [channelStatus, setChannelStatus] = React.useState(
     chatInstance.channelStatus()
   );
-  chatInstance.connectionStatusSetter = setServerStatus;
-  chatInstance.channelStatusSetter = setChannelStatus;
+  chatInstance.connectionStatusCallback = (value: string) => {
+    // so we can use react version of i18next otherwise, translations
+    // won't change after changing them in settings (until restart)
+    setServerStatus(t(value));
+  };
+  chatInstance.channelStatusCallback = (value: string) => {
+    if (value.length > 0 && value[0] === '#') {
+      setChannelStatus(value);
+    } else {
+      setChannelStatus(t(value));
+    }
+  };
 
   return (
     <Grid container direction="row" spacing={0} style={{ marginTop: '1em' }}>
@@ -695,46 +704,43 @@ export default function Home() {
               <MicOffIcon className={classes.icon} />
             </div>
             <h1 className={classes.header}>Project Oratio</h1>
-            <Grid
-              container
-              spacing={3}
-              alignContent="flex-end"
-              justify-content="flex-end"
-              className={classes.bottomButtons}
-            >
-              {/* <Grid container item justify-content="flex-end" xs={12}> */}
-              <div className={classes.browserSource}>
-                Browser source running at:{' '}
+            <Grid container direction="row" spacing={3} alignItems="center">
+              <Grid item xs={12}>
+                Browser source running at:
                 <a
                   href="http://localhost:4563"
                   target="_blank"
                   rel="noreferrer"
+                  style={{ marginLeft: '5px' }}
                 >
                   http://localhost:4563
                 </a>
-              </div>
-              <Link to="/preferences" className={classes.link}>
-                <Button
-                  id="open-preferences"
-                  variant="outlined"
-                  color="secondary"
-                  className={`${classes.button} ${classes.preferences}`}
-                >
-                  <SettingsIcon className={classes.buttonIcon} />{' '}
-                  {t('Preferences')}
-                </Button>
-              </Link>
+              </Grid>
+            </Grid>
+            <Grid container direction="row" spacing={3} alignItems="center">
+              <Grid item xs={12}>
+                <Link to="/preferences" className={classes.link}>
+                  <Button
+                    id="open-preferences"
+                    variant="outlined"
+                    color="secondary"
+                    className={`${classes.button} ${classes.preferences}`}
+                  >
+                    <SettingsIcon className={classes.buttonIcon} />{' '}
+                    {t('Preferences')}
+                  </Button>
+                </Link>
 
-              <Button
-                id="open-obs"
-                variant="contained"
-                color="primary"
-                className={classes.button}
-                onClick={handleOpenObs}
-              >
-                {t('Open OBS Display')}
-              </Button>
-              {/* </Grid> */}
+                <Button
+                  id="open-obs"
+                  variant="contained"
+                  color="primary"
+                  className={classes.button}
+                  onClick={handleOpenObs}
+                >
+                  {t('Open OBS Display')}
+                </Button>
+              </Grid>
             </Grid>
           </div>
         </div>

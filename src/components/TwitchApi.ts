@@ -86,14 +86,17 @@ export interface Emote {
   url: string;
 }
 
-export interface EmoteGroups {
+export interface EmoteGroupsGlobal {
   twitchGlobal: Emote[];
-  twitchChannel: Emote[];
   bttvGlobal: Emote[];
-  bttvChannel: Emote[];
   ffzGlobal: Emote[];
-  ffzChannel: Emote[];
   sevenTVGlobal: Emote[];
+}
+
+export interface EmoteGroupsChannel {
+  twitchChannel: Emote[];
+  bttvChannel: Emote[];
+  ffzChannel: Emote[];
   sevenTVChannel: Emote[];
 }
 
@@ -141,7 +144,6 @@ export default class TwitchApi {
         });
 
         res.on('error', (error) => {
-          console.log('request err: ', error);
           reject(error);
         });
       });
@@ -306,29 +308,36 @@ ${themeMode}/${emote.scale[emote.scale.length - 1]}`;
     return { id: emote.id, name: emote.name, url };
   }
 
-  async getAllAvailableEmotes(user_id: number): Promise<EmoteGroups> {
-    const allEmotes: EmoteGroups = {
+  async getGlobalEmotes(): Promise<EmoteGroupsGlobal> {
+    const allEmotes: EmoteGroupsGlobal = {
       // get global emotes, convert them to our common emote
       twitchGlobal: (await this.getGlobalEmotesTwitch()).map(
-        TwitchApi.convertTwitchEmote
-      ),
-      twitchChannel: (await this.getChannelEmotesTwitch(user_id)).map(
         TwitchApi.convertTwitchEmote
       ),
       bttvGlobal: (await this.getGlobalEmotesBTTV()).map(
         TwitchApi.convertBTTVEmote
       ),
-      bttvChannel: (await this.getChannelEmotesBTTV(user_id)).map(
-        TwitchApi.convertBTTVEmote
-      ),
       ffzGlobal: (await this.getGlobalEmotesFFZ()).map(
-        TwitchApi.convertFFZEmote
-      ),
-      ffzChannel: (await this.getChannelEmotesFFZ(user_id)).map(
         TwitchApi.convertFFZEmote
       ),
       sevenTVGlobal: (await this.getGlobalEmotes7TV()).map(
         TwitchApi.convert7TVEmote
+      ),
+    };
+
+    return allEmotes;
+  }
+
+  async getChannelEmotes(user_id: number): Promise<EmoteGroupsChannel> {
+    const allEmotes: EmoteGroupsChannel = {
+      twitchChannel: (await this.getChannelEmotesTwitch(user_id)).map(
+        TwitchApi.convertTwitchEmote
+      ),
+      bttvChannel: (await this.getChannelEmotesBTTV(user_id)).map(
+        TwitchApi.convertBTTVEmote
+      ),
+      ffzChannel: (await this.getChannelEmotesFFZ(user_id)).map(
+        TwitchApi.convertFFZEmote
       ),
       sevenTVChannel: (await this.getChannelEmotes7TV(user_id)).map(
         TwitchApi.convert7TVEmote

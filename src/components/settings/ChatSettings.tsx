@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 import React from 'react';
 import { ipcRenderer } from 'electron';
-import { Button, Grid } from '@material-ui/core';
+import { Button, Grid, Typography } from '@material-ui/core';
 import TextField from '@material-ui/core/TextField';
 import FormGroup from '@material-ui/core/FormGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
@@ -11,7 +11,7 @@ import IconButton from '@material-ui/core/IconButton';
 import CheckBoxOutlineBlankIcon from '@material-ui/icons/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@material-ui/icons/CheckBox';
 import { red, green } from '@material-ui/core/colors';
-// import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 
 async function handleOpenTwitchAuth(channelName: string, notifyChange: (tokenMissing: boolean) => void) {
   const { TWITCH_CLIENT_ID } = process.env;
@@ -31,6 +31,7 @@ async function handleOpenTwitchAuth(channelName: string, notifyChange: (tokenMis
 }
 
 export default function ChatSettings() {
+  const { t } = useTranslation();
   const [channelName, setChannelName] = React.useState(
     localStorage.getItem('channelName') || ''
   );
@@ -68,7 +69,7 @@ export default function ChatSettings() {
         <TextField
           id="channel-name"
           fullWidth
-          label="Twitch channel name"
+          label={t('Twitch channel name')}
           value={channelName}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             const trimmed = e.target.value.trim();
@@ -96,7 +97,7 @@ export default function ChatSettings() {
             justifyContent="flex-start"
             alignItems="center"
           >
-            Authorized:
+            { t('Authorized') }:
             <IconButton
               id="auth-status"
               style={ missingAuth ? { color: red[500] } : { color: green[500] } }
@@ -127,13 +128,16 @@ export default function ChatSettings() {
                 handleOpenTwitchAuth(channelName, setMissingAuth);
               }}
             >
-              Authorize!
+              { t('Authorize') }!
             </Button>
           </Grid>
         </Grid>
       </Grid>
-      <Grid item xs={6}>
+      <Grid item xs={8}>
         <FormGroup>
+          <Typography variant='h5' style={{ marginBottom: '.5em' }}>
+            { t('Chat mirroring') }:
+          </Typography>
           <FormControlLabel
             control={
               <Checkbox
@@ -143,10 +147,10 @@ export default function ChatSettings() {
                 disabled={missingChannel}
               />
             }
-            label="Mirror messages from twitch chat"
+            label={ t('from chat') }
           />
           {missingChannel && (
-            <FormHelperText>Missing channel name</FormHelperText>
+            <FormHelperText>{ t('Missing channel name') }</FormHelperText>
           )}
           <FormControlLabel
             control={
@@ -157,13 +161,13 @@ export default function ChatSettings() {
                 disabled={missingAuth || missingChannel}
               />
             }
-            label="Mirror messages to twitch chat"
+            label={ t('to chat') }
           />
           {missingChannel && (
-            <FormHelperText>Missing channel name</FormHelperText>
+            <FormHelperText>{ t('Missing channel name') }</FormHelperText>
           )}
           {missingAuth && (
-            <FormHelperText>Missing or invalid OAuth token</FormHelperText>
+            <FormHelperText>{ t('Missing or invalid OAuth token') }</FormHelperText>
           )}
         </FormGroup>
       </Grid>
