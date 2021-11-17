@@ -20,6 +20,16 @@ export const emoteNameToUrl: { [key: string]: string } = {};
 export const lowercaseToEmoteName: { [key: string]: string } = {};
 let asyncLoadingFinished = false;
 
+// path relative to resources/app.asar
+// app.getAppPath():
+// Oratio\release\win-unpacked\resources\app.asar
+// somehow that's not true for AudioSelector.tsx
+// there 'resources/assets/sounds' is needed???
+// ectron/node part has paths relative to the exe
+// which is in Oratio\release\win-unpacked where 'resources' is as well
+// WTF????
+// is this some kind of webpack config issue? because it would be insane if
+// this was default behaviour
 const assetLoc =
   process.env.NODE_ENV === 'development'
     ? 'assets/emotes'
@@ -96,6 +106,7 @@ async function importEmoteLibFromDisk() {
   clearObject(emoteNameToUrl);
   clearObject(lowercaseToEmoteName);
 
+  fs.mkdirSync(assetLoc, { recursive: true });
   let data: { [name: string]: string };
   try {
     data = JSON.parse(fs.readFileSync(emoteLibPath, 'utf-8'));
@@ -364,10 +375,15 @@ export default function Emotes() {
             progressUpdate(emote.name);
 
             // add to emote map
-            // emoteNameToUrl[emoteName] = `../${escape(file)}`;
-            emoteNameToUrl[emote.name] = encodeURI(
-              `../${filePathWithExtension}`
-            );
+            // html paths are relative to resources/app.asar that's why we
+            // need '../'
+            // node/electron paths though are relative to the exe which is
+            // where 'resources' lives as well
+            // so filePathWithExtension currently is the electron path and
+            // now we need to remove 'resources' from the url and add '../'
+            emoteNameToUrl[emote.name] = `../${encodeURI(
+              filePathWithExtension.substr('resources'.length)
+            )}`;
             lowercaseToEmoteName[emote.name.toLowerCase()] = emote.name;
             return null;
           })

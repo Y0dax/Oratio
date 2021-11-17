@@ -54,7 +54,8 @@ export default class TwitchAuth extends EventEmitter {
     this.#tokenType = null;
 
     // server is listening -> open page in browser
-    this.on('listening', (port: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    this.on('listening', (_port: number) => {
       this.openAuthPage();
     });
   }
