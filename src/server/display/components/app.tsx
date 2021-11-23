@@ -14,6 +14,9 @@ const useStyles = makeStyles(() =>
       flexGrow: 1,
       height: '100vh',
       // padding: theme.spacing(4),
+      // so we don't get a scrollbar; this will not actually hide any content
+      // since it would've been outside the window anyway
+      overflow: 'hidden',
     }),
     textTable: () => ({
       display: 'table',
@@ -37,6 +40,9 @@ const useStyles = makeStyles(() =>
     span: () => ({
       display: 'block',
     }),
+    emoji: {
+      verticalAlign: 'middle',
+    },
     hidden: () => ({
       display: 'none',
     }),
@@ -108,6 +114,7 @@ function SpeechPhrase(props: any) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const speechDisplay: any = useRef<HTMLSpanElement>(null);
   const { message, settings } = props;
+  const classes = useStyles(props);
 
   // TODO Test for performance impact of reading settings on every input
   const { speed } = settings;
@@ -140,6 +147,7 @@ function SpeechPhrase(props: any) {
     speechDisplay.current.style.color = fontColor;
     speechDisplay.current.style.fontWeight = fontWeight;
 
+    let currentTextFragment: HTMLSpanElement | null = null;
     let i = 0;
     const typewriter = () => {
       if (i < message.length) {
@@ -150,18 +158,27 @@ function SpeechPhrase(props: any) {
           speechSound.play();
         }
 
+        // TODO: the reference object is initialized as null but sometimes comes
+        // through as null here even though it is mounted on the component
+        // hack to bypass this but should figure out why
         if (speechDisplay.current) {
           // Check whether this character is the start of an emoji or emote.
           const foundEmoji = emojis.find((emoji) => emoji.index === i);
           const foundEmote = emotes.find((emote) => emote.index === i);
           if (foundEmoji) {
+            // end previous text fragment
+            currentTextFragment = null;
+
             const emojiString = foundEmoji[0];
             i += emojiString.length;
 
             emoteRequest(emojiString)
               .then((data) => {
                 if (data.found) {
-                  speechDisplay.current.innerHTML += data.value;
+                  const emojiContainer = document.createElement('span');
+                  emojiContainer.innerHTML = data.value;
+                  emojiContainer.children[0].classList.add(classes.emoji);
+                  speechDisplay.current.appendChild(emojiContainer);
                 } // else {
                 //   playSound = false;
                 // }
@@ -171,14 +188,23 @@ function SpeechPhrase(props: any) {
                 throw error;
               });
           } else if (foundEmote) {
+            // end previous text fragment
+            currentTextFragment = null;
+
             const emoteName = foundEmote[0];
             const emoteContainer = document.createElement('span');
             ReactDOM.render(<Emote emoteName={emoteName} />, emoteContainer);
             speechDisplay.current.appendChild(emoteContainer);
             i += emoteName.length;
           } else {
+            // we put the text into its own element so we can use textContent
+            if (currentTextFragment === null) {
+              currentTextFragment = document.createElement('span');
+              speechDisplay.current.appendChild(currentTextFragment);
+            }
+
             // TODO: Doublecheck escaping.
-            speechDisplay.current.innerHTML += message.charAt(i);
+            currentTextFragment.textContent += message.charAt(i);
             i += 1;
           }
         }
