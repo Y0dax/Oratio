@@ -30,7 +30,7 @@ either download all the global emotes or the emotes for your channel:`,
   'Refresh your channel emotes!': 'Refresh your channel emotes!',
   'Not authorized!': 'Not authorized!',
   'Twitch channel explanation': `Since Twitch does not allow anyone to get \
-information about your subscribed subscribed subscribed channels, you can \
+information about your subscribed channels, you can \
 enter a channel name below. the button will download all the emotes of \
 that channel:`,
   Valid: 'Valid',
