@@ -46,6 +46,7 @@ const useStyles = makeStyles(() =>
       height: 'auto',
       'max-height': '2em',
       'max-width': '1000px',
+      verticalAlign: 'middle',
     },
   })
 );
@@ -87,6 +88,7 @@ function Emote(attrs: { emoteName: string }) {
       height: 'auto',
       'max-height': '2em',
       'max-width': '1000px',
+      verticalAlign: 'middle',
     },
   });
   if (emoteName in emoteNameToUrl) {

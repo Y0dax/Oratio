@@ -244,6 +244,7 @@ const useStyles = makeStyles(() =>
       height: 'auto',
       'max-height': '2em',
       'max-width': '1000px',
+      verticalAlign: 'middle',
     },
   })
 );
