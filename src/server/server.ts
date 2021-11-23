@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
+import { ServerStyleSheets } from '@material-ui/core/styles';
 import uEmojiParser from 'universal-emoji-parser';
 import App from './display/components/app';
 
@@ -51,8 +52,12 @@ const assets = JSON.parse(manifest);
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 app.get('/', (req: express.Request, res: express.Response) => {
-  const component = ReactDOMServer.renderToString(React.createElement(App));
-  res.render('display', { assets, component });
+  const sheets = new ServerStyleSheets();
+  const component = ReactDOMServer.renderToString(
+    sheets.collect(React.createElement(App))
+  );
+  const css = sheets.toString();
+  res.render('display', { assets, component, css });
 });
 
 // Client bundle throws a lot of errors attempting to package static emote libraries
