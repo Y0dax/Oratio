@@ -113,16 +113,22 @@ export default class TwitchApi {
 
   #authHeaders: { Authorization: string; 'Client-Id': string };
 
-  constructor(public clientId: string, public authToken: string) {
+  constructor(
+    public clientId: string,
+    public authToken: string,
+    // callback for when we get a 401: Unauthorized response
+    public authFailedCallback: () => void
+  ) {
     this.clientId = clientId;
     this.authToken = authToken;
+    this.authFailedCallback = authFailedCallback;
     this.#authHeaders = {
       Authorization: `${this.tokenType} ${authToken}`,
       'Client-Id': clientId,
     };
   }
 
-  async apiRequest(url: string | URL, twitch: boolean): Promise<string> {
+  async apiRequest(url: string | URL, twitch: boolean): Promise<unknown> {
     return new Promise((resolve, reject) => {
       const options: https.RequestOptions = {};
       // only need the default headers twich api calls
@@ -140,7 +146,9 @@ export default class TwitchApi {
 
         res.on('end', () => {
           // sending data finished
-          resolve(Buffer.concat(data).toString());
+          const result = JSON.parse(Buffer.concat(data).toString());
+          this.checkStatus(result);
+          resolve(result);
         });
 
         res.on('error', (error) => {
@@ -151,14 +159,21 @@ export default class TwitchApi {
     });
   }
 
+  checkStatus(data: { [key: string]: unknown }) {
+    if (data.status === 401 || data.status === '401') {
+      this.authFailedCallback();
+    }
+  }
+
   async getUsersByLogin(logins: [string]): Promise<User[]> {
     const url = new URL(`${this.baseURI}/users`);
     for (const login of logins) {
       url.searchParams.append('login', login);
     }
 
-    const resp = await this.apiRequest(url, true);
-    const users = JSON.parse(resp);
+    const users = (await this.apiRequest(url, true)) as {
+      data?: User[];
+    };
     if (users.data) {
       return users.data;
     }
@@ -166,33 +181,34 @@ export default class TwitchApi {
   }
 
   async getUserId(login: string): Promise<number | null> {
-    const user = (await this.getUsersByLogin([login]))[0];
-    return user.id;
+    const users = await this.getUsersByLogin([login]);
+    if (users.length > 0) {
+      return users[0].id;
+    }
+    return null;
   }
 
   async getGlobalEmotesTwitch(): Promise<TwitchEmote[]> {
     const url = `${this.baseURI}/chat/emotes/global`;
-    const resp = JSON.parse(await this.apiRequest(url, true));
+    const resp = (await this.apiRequest(url, true)) as { data?: TwitchEmote[] };
     if (resp.data) {
-      const emotes: TwitchEmote[] = resp.data;
-      return emotes;
+      return resp.data;
     }
     return [];
   }
 
   async getChannelEmotesTwitch(user_id: number): Promise<TwitchEmote[]> {
     const url = `${this.baseURI}/chat/emotes?broadcaster_id=${user_id}`;
-    const resp = JSON.parse(await this.apiRequest(url, true));
+    const resp = (await this.apiRequest(url, true)) as { data?: TwitchEmote[] };
     if (resp.data) {
-      const emotes: TwitchEmote[] = resp.data;
-      return emotes;
+      return resp.data;
     }
     return [];
   }
 
   async getGlobalEmotesBTTV(): Promise<BTTVEmote[]> {
     const url = `${this.baseURIBTTV}/cached/emotes/global`;
-    const resp = JSON.parse(await this.apiRequest(url, false));
+    const resp = (await this.apiRequest(url, false)) as BTTVEmote[];
     if (resp) {
       return resp;
     }
@@ -201,9 +217,12 @@ export default class TwitchApi {
 
   async getChannelEmotesBTTV(user_id: number): Promise<BTTVEmote[]> {
     const url = `${this.baseURIBTTV}/cached/users/twitch/${user_id}`;
-    const resp = JSON.parse(await this.apiRequest(url, false));
+    const resp = (await this.apiRequest(url, false)) as {
+      channelEmotes?: BTTVEmote[];
+      sharedEmotes: BTTVEmote[];
+    };
     // user might not exist on bttv
-    if (resp && 'channelEmotes' in resp) {
+    if (resp && resp.channelEmotes) {
       const emotes: BTTVEmote[] = [...resp.channelEmotes, ...resp.sharedEmotes];
       return emotes;
     }
@@ -212,12 +231,13 @@ export default class TwitchApi {
 
   async getGlobalEmotesFFZ(): Promise<FFZEmote[]> {
     const url = `${this.baseURIFFZ}/set/global`;
-    const resp = JSON.parse(await this.apiRequest(url, false));
+    const resp = (await this.apiRequest(url, false)) as {
+      sets?: { [setId: string]: FFZEmoteSet };
+    };
     if (resp.sets) {
       // collect all the emotes of all the sets
       let emotes: FFZEmote[] = [];
-      const { sets }: { [setId: string]: FFZEmoteSet } = resp;
-      for (const [, set] of Object.entries(sets)) {
+      for (const [, set] of Object.entries(resp.sets)) {
         emotes = emotes.concat(set.emoticons);
       }
 
@@ -228,12 +248,13 @@ export default class TwitchApi {
 
   async getChannelEmotesFFZ(user_id: number): Promise<FFZEmote[]> {
     const url = `${this.baseURIFFZ}/room/id/${user_id}`;
-    const resp = JSON.parse(await this.apiRequest(url, false));
+    const resp = (await this.apiRequest(url, false)) as {
+      sets?: { [setId: string]: FFZEmoteSet };
+    };
     if (resp.sets) {
       // collect all the emotes of all the sets
       let emotes: FFZEmote[] = [];
-      const { sets }: { [setId: string]: FFZEmoteSet } = resp;
-      for (const [, set] of Object.entries(sets)) {
+      for (const [, set] of Object.entries(resp.sets)) {
         emotes = emotes.concat(set.emoticons);
       }
 
@@ -244,7 +265,9 @@ export default class TwitchApi {
 
   async getGlobalEmotes7TV(): Promise<SevenTVEmote[]> {
     const url = `${this.baseURI7TV}/emotes/global`;
-    const resp = JSON.parse(await this.apiRequest(url, false));
+    const resp = (await this.apiRequest(url, false)) as
+      | SevenTVEmote[]
+      | undefined;
     if (resp) {
       return resp;
     }
@@ -253,7 +276,9 @@ export default class TwitchApi {
 
   async getChannelEmotes7TV(user_id: number): Promise<SevenTVEmote[]> {
     const url = `${this.baseURI7TV}/users/${user_id}/emotes`;
-    const resp = JSON.parse(await this.apiRequest(url, false));
+    const resp = (await this.apiRequest(url, false)) as
+      | SevenTVEmote[]
+      | unknown;
     // will return 'status', 'message' and 'reason' on error
     if (Array.isArray(resp)) {
       return resp;

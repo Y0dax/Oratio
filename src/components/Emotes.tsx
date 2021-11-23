@@ -333,7 +333,11 @@ export default function Emotes() {
         // button can't be pressed if either of these are null
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         TWITCH_CLIENT_ID!,
-        authToken
+        authToken,
+        // callback for when we get a 401: Unauthorized response
+        () => {
+          localStorage.setItem('twitchAuth', '0');
+        }
       );
 
       // also checked by canGetEmotes
