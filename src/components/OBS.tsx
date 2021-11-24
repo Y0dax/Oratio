@@ -13,31 +13,31 @@ const DEFAULT_TIMEOUT = 4000;
 const useStyles = makeStyles(() =>
   createStyles({
     root: {
-      flexGrow: 1,
       backgroundColor: 'blue !important',
-      height: '100vh',
-      // padding: theme.spacing(4),
+      height: '100%',
+      width: '100%',
+      position: 'absolute',
+      top: 0,
+      left: 0,
       // so we don't get a scrollbar; this will not actually hide any content
       // since it would've been outside the window anyway
       overflow: 'hidden',
     },
-    textTable: {
-      display: 'table',
-      height: '100%',
-    },
     text: {
       color: 'white',
       fontSize: '3rem',
-      textAlign: 'left',
-      display: 'table-cell',
-      verticalAlign: 'bottom',
+      fontFamily: "'Baloo Da 2', cursive",
     },
     bubble: {
       backgroundColor: localStorage.getItem('bubbleColor') || '#000',
-      fontFamily: "'Baloo Da 2', cursive",
       padding: '20px',
       border: '3px solid #a9a9a9',
       borderRadius: '8px',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
     },
     span: {
       display: 'block',
@@ -104,9 +104,42 @@ function SpeechPhrase(props: any) {
     speechDisplay.current.style.color = fontColor;
     speechDisplay.current.style.fontWeight = fontWeight;
 
-    let currentTextFragment: HTMLSpanElement | null = null;
+    let wasOnScreen = false;
+    // TODO: mb replace this with removing a specific item (passing the key)
+    // to 'shift' action, so there's no chance we could trigger the 'shift'
+    // action twice for the same element
+    let sentRemoveAction = false;
     // `i` is the message character index
     let i = 0;
+
+    // watch for intersection events for our speechDisplay so we know
+    // when it enters and leavs the viewport
+    const observer = new IntersectionObserver(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      (entries, _observer) => {
+        entries.forEach((entry) => {
+          if (entry.target === speechDisplay.current && entry.isIntersecting) {
+            wasOnScreen = true;
+          } else if (wasOnScreen) {
+            if (!sentRemoveAction && i >= message.length) {
+              sentRemoveAction = true;
+              props.dispatch({ type: 'shift' });
+            }
+          }
+        });
+      },
+      {
+        // watch for intersection with viewport
+        root: null,
+        // margins around root intersection
+        rootMargin: '0px',
+        // 1.0 -> fire element once 100% of the elemnt is shown
+        threshold: 1.0,
+      }
+    );
+    observer.observe(speechDisplay.current);
+
+    let currentTextFragment: HTMLSpanElement | null = null;
     const typewriter = () => {
       if (i < message.length) {
         speechSound.stop();
@@ -160,10 +193,17 @@ function SpeechPhrase(props: any) {
           // TODO: the reference object is initialized as null but sometimes comes
           // through as null here even though it is mounted on the component
           // hack to bypass this but should figure out why
+          // TODO: this causes the empty div with class 'bubble' to remain as empty
+          // box on screen sometimes
           if (speechDisplay.current) {
             speechDisplay.current.innerHTML = '';
           }
-          props.dispatch({ type: 'shift' });
+          // so our IntersectionObserver callback knows that we already
+          // triggered the shift action
+          if (!sentRemoveAction) {
+            sentRemoveAction = true;
+            props.dispatch({ type: 'shift' });
+          }
         }, timeout);
       }
     };
@@ -202,24 +242,20 @@ export default function OBS() {
   const classes = useStyles();
   return (
     <div className={classes.root}>
-      <div className={classes.textTable}>
-        <div className={classes.text}>
-          <div
-            className={
-              state.phrases.length <= 0 ? classes.hidden : classes.bubble
-            }
-          >
-            {state.phrases.map((phrase: { message: string; key: string }) => {
-              return (
-                <SpeechPhrase
-                  key={phrase.key}
-                  message={phrase.message}
-                  dispatch={dispatch}
-                />
-              );
-            })}
-          </div>
-        </div>
+      <div
+        className={`${
+          state.phrases.length <= 0 ? classes.hidden : classes.bubble
+        } ${classes.text}`}
+      >
+        {state.phrases.map((phrase: { message: string; key: string }) => {
+          return (
+            <SpeechPhrase
+              key={phrase.key}
+              message={phrase.message}
+              dispatch={dispatch}
+            />
+          );
+        })}
       </div>
     </div>
   );
