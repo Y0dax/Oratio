@@ -150,42 +150,9 @@ function SpeechPhrase(props: any) {
     speechDisplay.current.style.color = fontColor;
     speechDisplay.current.style.fontWeight = fontWeight;
 
-    let wasOnScreen = false;
-    // TODO: mb replace this with removing a specific item (passing the key)
-    // to 'shift' action, so there's no chance we could trigger the 'shift'
-    // action twice for the same element
-    let sentRemoveAction = false;
+    let currentTextFragment: HTMLSpanElement | null = null;
     // `i` is the message character index
     let i = 0;
-
-    // watch for intersection events for our speechDisplay so we know
-    // when it enters and leavs the viewport
-    const observer = new IntersectionObserver(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      (entries, _observer) => {
-        entries.forEach((entry) => {
-          if (entry.target === speechDisplay.current && entry.isIntersecting) {
-            wasOnScreen = true;
-          } else if (wasOnScreen) {
-            if (!sentRemoveAction && i >= message.length) {
-              sentRemoveAction = true;
-              props.dispatch({ type: 'shift' });
-            }
-          }
-        });
-      },
-      {
-        // watch for intersection with viewport
-        root: null,
-        // margins around root intersection
-        rootMargin: '0px',
-        // 1.0 -> fire element once 100% of the elemnt is shown
-        threshold: 1.0,
-      }
-    );
-    observer.observe(speechDisplay.current);
-
-    let currentTextFragment: HTMLSpanElement | null = null;
     const typewriter = () => {
       if (i < message.length) {
         speechSound.stop();
@@ -258,12 +225,7 @@ function SpeechPhrase(props: any) {
           if (speechDisplay.current) {
             speechDisplay.current.innerHTML = '';
           }
-          // so our IntersectionObserver callback knows that we already
-          // triggered the shift action
-          if (!sentRemoveAction) {
-            sentRemoveAction = true;
-            props.dispatch({ type: 'shift' });
-          }
+          props.dispatch({ type: 'shift' });
         }, timeout);
       }
     };
