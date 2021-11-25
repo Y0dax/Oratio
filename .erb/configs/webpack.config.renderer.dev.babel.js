@@ -4,7 +4,7 @@ import webpack from 'webpack';
 import chalk from 'chalk';
 import { merge } from 'webpack-merge';
 import { spawn, execSync } from 'child_process';
-import baseConfig from './webpack.config.base';
+import baseConfig, { getCSP } from './webpack.config.base';
 import webpackPaths from './webpack.paths';
 import CheckNodeEnv from '../scripts/CheckNodeEnv';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
@@ -258,11 +258,12 @@ export default merge(baseConfig, {
       isBrowser: false,
       env: process.env.NODE_ENV,
       isDevelopment: process.env.NODE_ENV !== 'production',
-      // turns out this is possible
-      // meta: {
-      //   'Content-Security-Policy': { 'http-equiv': 'Content-Security-Policy', 'content': 'default-src https:' },
-      //   // Will generate: <meta http-equiv="Content-Security-Policy" content="default-src https:">
-      // }
+      meta: {
+        'Content-Security-Policy': {
+          'http-equiv': 'Content-Security-Policy',
+          'content': getCSP(),
+        },
+      }
     }),
   ],
 

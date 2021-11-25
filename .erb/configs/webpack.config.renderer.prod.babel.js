@@ -11,7 +11,7 @@
  import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
  import { merge } from 'webpack-merge';
  import TerserPlugin from 'terser-webpack-plugin';
- import baseConfig from './webpack.config.base';
+import baseConfig, { getCSP } from './webpack.config.base';
  import webpackPaths from './webpack.paths';
  import CheckNodeEnv from '../scripts/CheckNodeEnv';
  import DeleteSourceMaps from '../scripts/DeleteSourceMaps';
@@ -172,6 +172,12 @@
       isBrowser: false,
       env: process.env.NODE_ENV,
       isDevelopment: process.env.NODE_ENV !== 'production',
+      meta: {
+        'Content-Security-Policy': {
+          'http-equiv': 'Content-Security-Policy',
+          'content': getCSP(),
+        },
+      }
     }),
    ],
  });
