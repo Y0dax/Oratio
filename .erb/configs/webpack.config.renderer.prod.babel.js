@@ -4,41 +4,44 @@
 
  import path from 'path';
  import webpack from 'webpack';
+ // order important (b4 mini-css etc.)
+ import HtmlWebpackPlugin from 'html-webpack-plugin';
  import MiniCssExtractPlugin from 'mini-css-extract-plugin';
  import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
  import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
  import { merge } from 'webpack-merge';
  import TerserPlugin from 'terser-webpack-plugin';
  import baseConfig from './webpack.config.base';
+ import webpackPaths from './webpack.paths';
  import CheckNodeEnv from '../scripts/CheckNodeEnv';
  import DeleteSourceMaps from '../scripts/DeleteSourceMaps';
- 
+
  CheckNodeEnv('production');
  DeleteSourceMaps();
- 
+
  const devtoolsConfig = process.env.DEBUG_PROD === 'true' ? {
    devtool: 'source-map'
  } : {};
- 
+
  export default merge(baseConfig, {
    ...devtoolsConfig,
- 
+
    mode: 'production',
- 
+
    target: 'electron-renderer',
- 
+
    entry: [
      'core-js',
      'regenerator-runtime/runtime',
      path.join(__dirname, '../../src/App.tsx'),
    ],
- 
+
    output: {
      path: path.join(__dirname, '../../src/dist'),
      publicPath: './dist/',
      filename: 'renderer.prod.js',
    },
- 
+
    module: {
      rules: [
        {
@@ -121,7 +124,7 @@
        },
      ],
    },
- 
+
    optimization: {
      minimize: true,
      minimizer:
@@ -132,7 +135,7 @@
          new CssMinimizerPlugin(),
        ],
    },
- 
+
    plugins: [
      /**
       * Create global constants which can be configured at compile time.
@@ -147,15 +150,28 @@
        NODE_ENV: 'production',
        DEBUG_PROD: false,
      }),
- 
+
      new MiniCssExtractPlugin({
        filename: 'style.css',
      }),
- 
+
      new BundleAnalyzerPlugin({
        analyzerMode:
          process.env.OPEN_ANALYZER === 'true' ? 'server' : 'disabled',
        openAnalyzer: process.env.OPEN_ANALYZER === 'true',
      }),
+
+     new HtmlWebpackPlugin({
+      filename: 'index.html',
+      template: path.join(webpackPaths.srcPath, 'index.html'),
+      minify: {
+        collapseWhitespace: true,
+        removeAttributeQuotes: true,
+        removeComments: true,
+      },
+      isBrowser: false,
+      env: process.env.NODE_ENV,
+      isDevelopment: process.env.NODE_ENV !== 'production',
+    }),
    ],
  });

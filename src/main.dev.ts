@@ -92,7 +92,14 @@ const createWindow = async () => {
     },
   });
 
-  mainWindow.loadURL(`file://${__dirname}/index.html#/home`);
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.loadURL(
+      `http://localhost:${process.env.PORT || '1212'}/dist/index.html#/home`
+    );
+  } else {
+    console.log(`file://${__dirname}/index.html#/home`);
+    mainWindow.loadURL(`file://${__dirname}/index.html#/home`);
+  }
 
   /**
    * Add event listeners...
@@ -205,5 +212,9 @@ ipcMain.on('authLoopback', async (event, channelName) => {
 
 // TODO: how long does getPassword usually take? should we use this as async?
 ipcMain.on('getTwitchToken', async (event, channelName: string) => {
-  event.returnValue = await keytar.getPassword('Oratio-Twitch', channelName);
+  if (!channelName || channelName.length === 0) {
+    event.returnValue = null;
+  } else {
+    event.returnValue = await keytar.getPassword('Oratio-Twitch', channelName);
+  }
 });

@@ -84,7 +84,14 @@ async function handleOpenObs() {
         // Soffscreen: true,
       },
     });
-    win.loadURL(`file://${__dirname}/index.html#/obs`);
+
+    if (process.env.NODE_ENV === 'development') {
+      win.loadURL(
+        `http://localhost:${process.env.PORT || '1212'}/dist/index.html#/obs`
+      );
+    } else {
+      win.loadURL(`file://${__dirname}/index.html#/obs`);
+    }
 
     win.on('closed', () => {
       win = undefined;
