@@ -248,7 +248,7 @@ export default merge(baseConfig, {
     new ReactRefreshWebpackPlugin(),
 
     new HtmlWebpackPlugin({
-      filename: path.join('index.html'),
+      filename: 'index.html',
       template: path.join(webpackPaths.srcPath, 'index.html'),
       minify: {
         collapseWhitespace: true,
@@ -258,13 +258,11 @@ export default merge(baseConfig, {
       isBrowser: false,
       env: process.env.NODE_ENV,
       isDevelopment: process.env.NODE_ENV !== 'production',
-      // nodeModules: webpackPaths.appNodeModulesPath,
-      // inject meta tags
-      // does not work with csp since the key will alwasy be the name attrib
-      // and csp need http-equiv attrib
+      // turns out this is possible
       // meta: {
-      //   'Content-Security-Policy': "script-src 'self' localhost:4563;",
-      // },
+      //   'Content-Security-Policy': { 'http-equiv': 'Content-Security-Policy', 'content': 'default-src https:' },
+      //   // Will generate: <meta http-equiv="Content-Security-Policy" content="default-src https:">
+      // }
     }),
   ],
 
@@ -276,13 +274,10 @@ export default merge(baseConfig, {
   devServer: {
     port,
     compress: true,
-    // repalce with built-in logger
-    // REMOVED: noInfo: false,
     devMiddleware: {
       publicPath,
       stats: 'errors-only',
     },
-    // REMOVED: inline: true,
     // replace with experiments.lazyCompilation
     // REMOVED: lazy: false,
     hot: true,
@@ -303,17 +298,15 @@ export default merge(baseConfig, {
       {
         publicPath: '/assets',
         directory: path.join(webpackPaths.rootPath, 'assets'),
+        // needs to be false otherwise downloading files to assets will
+        // trigger a reload in dev env
+        watch: false,
       },
       {
         publicPath: '/dll',
         directory: webpackPaths.dllPath,
       },
     ],
-    // proxy: {
-    //   '/assets/emotes/*': {
-    //     target: 'http://localhost:[port]/assets/emotes',
-    //     pathRewrite: { '^/some/sub-path': '' },
-    // },
     onBeforeSetupMiddleware () {
       console.log('Starting Main Process...');
         spawn('npm', ['run', 'start:main'], {
