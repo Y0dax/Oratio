@@ -220,12 +220,6 @@ function SpeechPhrase(props: any) {
         setTimeout(() => {
           // TODO: the reference object is initialized as null but sometimes comes
           // through as null here even though it is mounted on the component
-          // hack to bypass this but should figure out why
-          // TODO: this causes the empty div with class 'bubble' to remain as empty
-          // box on screen sometimes
-          if (speechDisplay.current) {
-            speechDisplay.current.innerHTML = '';
-          }
           props.dispatch({ type: 'shift' });
         }, timeout);
       }
