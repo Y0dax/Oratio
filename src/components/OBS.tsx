@@ -27,6 +27,7 @@ const useStyles = makeStyles(() =>
       color: 'white',
       fontSize: '3rem',
       fontFamily: "'Baloo Da 2', cursive",
+      wordBreak: 'break-word',
     },
     bubble: {
       backgroundColor: localStorage.getItem('bubbleColor') || '#000',

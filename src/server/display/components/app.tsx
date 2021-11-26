@@ -24,6 +24,7 @@ const useStyles = makeStyles(() =>
       color: 'white',
       fontSize: '3rem',
       fontFamily: "'Baloo Da 2', cursive",
+      wordBreak: 'break-word',
     }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     bubble: (props: any) => ({
