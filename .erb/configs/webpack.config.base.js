@@ -12,11 +12,14 @@ export const getCSP = () => {
   // we need 'unsafe-inline' for style-src since MUI (at least v4) does not provide
   // a good alternative
   // 'unsafe-eval' for script-src is needed in dev mode for the devtool/sourcemap rebuilds
-  return `script-src 'self' localhost:4563 ${isDevEnv ? "'unsafe-eval'" : ''};
-default-src 'self' localhost:4563;
+  // NOTE: omitting the protocol means it will use "the current protocol"
+  // -> works in dev env (since we use the dev server with http) but not in prod
+  //    where file:// is used
+  return `script-src 'self' http://localhost:4563 ${isDevEnv ? "'unsafe-eval'" : ''};
+default-src 'self' http://localhost:4563;
 style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
 font-src 'self' https://fonts.gstatic.com;
-connect-src 'self' localhost:4563 ws://localhost:4563 wss://irc-ws.chat.twitch.tv;
+connect-src 'self' http://localhost:4563 ws://localhost:4563 wss://irc-ws.chat.twitch.tv;
 img-src 'self' data:`;
 };
 

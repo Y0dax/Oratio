@@ -87,10 +87,12 @@ async function handleOpenObs() {
 
     if (process.env.NODE_ENV === 'development') {
       win.loadURL(
-        `http://localhost:${process.env.PORT || '1212'}/dist/index.html#/obs`
+        `http://localhost:${
+          process.env.PORT || '1212'
+        }/dist/index_injected.html#/obs`
       );
     } else {
-      win.loadURL(`file://${__dirname}/index.html#/obs`);
+      win.loadURL(`file://${__dirname}/index_injected.html#/obs`);
     }
 
     win.on('closed', () => {

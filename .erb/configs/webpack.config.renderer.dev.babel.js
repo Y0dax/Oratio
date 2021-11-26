@@ -248,7 +248,7 @@ export default merge(baseConfig, {
     new ReactRefreshWebpackPlugin(),
 
     new HtmlWebpackPlugin({
-      filename: 'index.html',
+      filename: 'index_injected.html',
       template: path.join(webpackPaths.srcPath, 'index.html'),
       minify: {
         collapseWhitespace: true,

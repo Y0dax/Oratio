@@ -162,7 +162,7 @@ import baseConfig, { getCSP } from './webpack.config.base';
      }),
 
      new HtmlWebpackPlugin({
-      filename: 'index.html',
+      filename: '../index_injected.html',
       template: path.join(webpackPaths.srcPath, 'index.html'),
       minify: {
         collapseWhitespace: true,

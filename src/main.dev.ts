@@ -94,11 +94,12 @@ const createWindow = async () => {
 
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL(
-      `http://localhost:${process.env.PORT || '1212'}/dist/index.html#/home`
+      `http://localhost:${
+        process.env.PORT || '1212'
+      }/dist/index_injected.html#/home`
     );
   } else {
-    console.log(`file://${__dirname}/index.html#/home`);
-    mainWindow.loadURL(`file://${__dirname}/index.html#/home`);
+    mainWindow.loadURL(`file://${__dirname}/index_injected.html#/home`);
   }
 
   /**

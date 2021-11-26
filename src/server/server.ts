@@ -17,20 +17,9 @@ app.set('view engine', 'ejs');
 app.engine('ejs', require('ejs').__express);
 
 const isDevEnv = process.env.NODE_ENV === 'development';
-// if (isDevEnv) {
-//   app.use((req, res, next) => {
-//     res.header('Access-Control-Allow-Origin', '*');
-//     res.header(
-//       'Access-Control-Allow-Headers',
-//       'Origin, X-Requested-With, Content-Type, Accept'
-//     );
-//     console.log('adding CORS headers');
-//     next();
-//   });
-// }
-
-const resourcePath =
-  isDevEnv || process.env.DEBUG_PROD === 'true' ? '' : '/resources';
+// removed  || process.env.DEBUG_PROD === 'true'
+// since path was wrong
+const resourcePath = isDevEnv ? '' : '/resources';
 
 app.set(
   'views',
