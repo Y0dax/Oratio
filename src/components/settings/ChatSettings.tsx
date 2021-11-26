@@ -80,6 +80,11 @@ export default function ChatSettings() {
               setMirrorFromChat(false);
               localStorage.setItem('mirrorFromChat', '0');
             }
+            // changing channel name should remove auth checkmark
+            if (!missingAuth) {
+              setMissingAuth(true);
+              localStorage.setItem('twitchAuth', '0');
+            }
 
             setChannelName(e.target.value);
             // TODO mb use a delayed timer for setting it, so we don't set it on every keystroke
