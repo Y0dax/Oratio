@@ -30,6 +30,8 @@ const useStyles = makeStyles(() =>
       // height: '100vh',
       background: theme.palette.background.default,
       color: 'white',
+      // disable scroll bar on home screen
+      overflow: 'hidden',
     },
     content: {
       margin: theme.spacing(4),
