@@ -141,20 +141,71 @@ function SpeechPhrase(props: any) {
     (e) => e[0] in emoteNameToUrl
   );
 
-  // NOTE: the procedure to remove the message is only queued after the message
-  // is finished "animating", so we don't need to account for the message time
-  // although we could increase the timeout so ppl have more time to read the
-  // message
-  const timeout: number = DEFAULT_TIMEOUT;
+  const timePerChar = 40; // avg reading speed is 25 letters/s -> 40ms/letter
+  const clamp = (num: number, min: number, max: number) =>
+    Math.min(Math.max(num, min), max);
+  // increase time on screen based on message length after it's done animating
+  // max of an extra 15s
+  const timeout: number =
+    DEFAULT_TIMEOUT + clamp(timePerChar * message.length, 0, 15000);
 
   useEffect(() => {
     speechDisplay.current.style.fontSize = fontSize;
     speechDisplay.current.style.color = fontColor;
     speechDisplay.current.style.fontWeight = fontWeight;
 
-    let currentTextFragment: HTMLSpanElement | null = null;
     // `i` is the message character index
     let i = 0;
+    let wasOnScreen = false;
+    // so we don't trigger multiple "shift" actions
+    let sentRemoveAction = false;
+
+    // watch for intersection events for our speechDisplay so we know
+    // when it enters and leaves the viewport
+    const observer = new IntersectionObserver(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      (entries, _observer) => {
+        entries.forEach((entry) => {
+          if (entry.target === speechDisplay.current) {
+            // NOTE: an intersection with the viewport only triggers when the
+            // element touches one of the edge of the viewport, so it won't fire
+            // when an object enters the screen without touching any edge
+            // because of this intersectionRatio in this case mean how far is
+            // the element outside of the screen
+            if (!wasOnScreen) {
+              if (entry.isIntersecting && entry.intersectionRatio >= 1) {
+                // element was fully visible on the viewport
+                wasOnScreen = true;
+              }
+            } else if (
+              !entry.isIntersecting &&
+              entry.intersectionRatio <= 0 &&
+              !sentRemoveAction &&
+              i >= message.length
+            ) {
+              // was fully displayed on screen but reached the top of the viewport, where
+              // now no portion of the element is visible anymore
+              sentRemoveAction = true;
+              props.dispatch({ type: 'shift', id: props.runningId });
+            }
+          }
+        });
+      },
+      {
+        // watch for intersection with viewport
+        root: null,
+        // margins around root intersection
+        rootMargin: '0px',
+        // event will only fire for these thresholds:
+        // 1 -> fire event once 100% of the elemnt is shown
+        threshold: [1, 0],
+      }
+    );
+
+    // TODO: can the speechDisplay.current ref still be null here?
+    observer.observe(speechDisplay.current);
+
+    let currentTextFragment: HTMLSpanElement | null = null;
     const typewriter = () => {
       if (i < message.length) {
         speechSound.stop();
@@ -214,7 +265,10 @@ function SpeechPhrase(props: any) {
       } else {
         // message done "animating" queue the removal
         setTimeout(() => {
-          props.dispatch({ type: 'shift', id: props.runningId });
+          if (!sentRemoveAction) {
+            sentRemoveAction = true;
+            props.dispatch({ type: 'shift', id: props.runningId });
+          }
         }, timeout);
       }
     };
@@ -241,7 +295,8 @@ function reducer(state: any, action: any) {
         settings: action.settings,
       };
     case 'shift':
-      // shorter messages that are newer can get removed before an older and longer
+      // NOTE: changed this to remove a specific id since:
+      // shorter messages that are newer could get removed before an older and longer
       // message will finish to animate and thus the old message will be removed
       // instead of the new one since .slice(1) just removes the oldest message
       return {
