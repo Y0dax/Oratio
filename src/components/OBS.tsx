@@ -95,10 +95,11 @@ function SpeechPhrase(props: any) {
     (e) => e[0] in emoteNameToUrl
   );
 
-  // Account for the time to print a message so it doesn't disappear early
-  const timeout: number =
-    message.length * timeBetweenChars +
-    (message.length > 0 ? DEFAULT_TIMEOUT : 0);
+  // NOTE: the procedure to remove the message is only queued after the message
+  // is finished "animating", so we don't need to account for the message time
+  // although we could increase the timeout so ppl have more time to read the
+  // message
+  const timeout: number = DEFAULT_TIMEOUT;
 
   useEffect(() => {
     speechDisplay.current.style.fontSize = fontSize;
@@ -115,52 +116,46 @@ function SpeechPhrase(props: any) {
           speechSound.play();
         }
 
-        // TODO: the reference object is initialized as null but sometimes comes
-        // through as null here even though it is mounted on the component
-        // hack to bypass this but should figure out why
-        if (speechDisplay.current) {
-          // Check whether this character is the start of an emoji or emote.
-          const foundEmoji = emojis.find((emoji) => emoji.index === i);
-          const foundEmote = emotes.find((emote) => emote.index === i);
-          if (foundEmoji) {
-            // end previous text fragment
-            currentTextFragment = null;
+        // Check whether this character is the start of an emoji or emote.
+        const foundEmoji = emojis.find((emoji) => emoji.index === i);
+        const foundEmote = emotes.find((emote) => emote.index === i);
+        if (foundEmoji) {
+          // end previous text fragment
+          currentTextFragment = null;
 
-            const emojiString = foundEmoji[0];
-            const emojiContainer = document.createElement('span');
-            // speechDisplay.current.innerHTML += uEmojiParser.parse(emojiString);
-            emojiContainer.innerHTML = uEmojiParser.parse(emojiString);
-            emojiContainer.children[0].classList.add(classes.emoji);
-            speechDisplay.current.appendChild(emojiContainer);
-            i += emojiString.length;
-          } else if (foundEmote) {
-            // end previous text fragment
-            currentTextFragment = null;
+          const emojiString = foundEmoji[0];
+          const emojiContainer = document.createElement('span');
+          // speechDisplay.current.innerHTML += uEmojiParser.parse(emojiString);
+          emojiContainer.innerHTML = uEmojiParser.parse(emojiString);
+          emojiContainer.children[0].classList.add(classes.emoji);
+          speechDisplay.current.appendChild(emojiContainer);
+          i += emojiString.length;
+        } else if (foundEmote) {
+          // end previous text fragment
+          currentTextFragment = null;
 
-            const emoteName = foundEmote[0];
-            const emoteContainer = document.createElement('span');
-            ReactDOM.render(<Emote emoteName={emoteName} />, emoteContainer);
-            speechDisplay.current.appendChild(emoteContainer);
-            i += emoteName.length;
-          } else {
-            // we put the text into its own element so we can use textContent
-            if (currentTextFragment === null) {
-              currentTextFragment = document.createElement('span');
-              speechDisplay.current.appendChild(currentTextFragment);
-            }
-
-            // TODO: Doublecheck escaping.
-            currentTextFragment.textContent += message.charAt(i);
-            i += 1;
+          const emoteName = foundEmote[0];
+          const emoteContainer = document.createElement('span');
+          ReactDOM.render(<Emote emoteName={emoteName} />, emoteContainer);
+          speechDisplay.current.appendChild(emoteContainer);
+          i += emoteName.length;
+        } else {
+          // we put the text into its own element so we can use textContent
+          if (currentTextFragment === null) {
+            currentTextFragment = document.createElement('span');
+            speechDisplay.current.appendChild(currentTextFragment);
           }
+
+          // TODO: Doublecheck escaping.
+          currentTextFragment.textContent += message.charAt(i);
+          i += 1;
         }
 
         setTimeout(typewriter, timeBetweenChars);
       } else {
+        // message done "animating" queue the removal
         setTimeout(() => {
-          // TODO: the reference object is initialized as null but sometimes comes
-          // through as null here even though it is mounted on the component
-          props.dispatch({ type: 'shift' });
+          props.dispatch({ type: 'shift', id: props.runningId });
         }, timeout);
       }
     };
@@ -172,13 +167,26 @@ function SpeechPhrase(props: any) {
   return <SpeechDisplay ref={speechDisplay} />;
 }
 
+interface Phrase {
+  message: string;
+  key: string;
+  runningId: number;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function reducer(state: any, action: any) {
   switch (action.type) {
     case 'push':
       return { phrases: [...state.phrases, action.phrase] };
     case 'shift':
-      return { phrases: state.phrases.slice(1) };
+      // shorter messages that are newer can get removed before an older and longer
+      // message will finish to animate and thus the old message will be removed
+      // instead of the new one since .slice(1) just removes the oldest message
+      return {
+        phrases: state.phrases.filter(
+          (phrase: Phrase) => phrase.runningId !== action.id
+        ),
+      };
     default:
       return state;
   }
@@ -189,10 +197,12 @@ export default function OBS() {
 
   // Only register ipc speech callback once after component is mounted
   useEffect(() => {
+    let runningId = 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ipc.on('speech', (_event: any, message: any) => {
       const key: string = uniqueHash();
-      dispatch({ type: 'push', phrase: { message, key } });
+      dispatch({ type: 'push', phrase: { message, key, runningId } });
+      runningId += 1;
     });
   }, []);
 
@@ -204,10 +214,11 @@ export default function OBS() {
           state.phrases.length <= 0 ? classes.hidden : classes.bubble
         } ${classes.text}`}
       >
-        {state.phrases.map((phrase: { message: string; key: string }) => {
+        {state.phrases.map((phrase: Phrase) => {
           return (
             <SpeechPhrase
               key={phrase.key}
+              runningId={phrase.runningId}
               message={phrase.message}
               dispatch={dispatch}
             />
