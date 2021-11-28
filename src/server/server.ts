@@ -74,10 +74,13 @@ app.get('/emotes', (req: express.Request, res: express.Response) => {
 });
 
 const server = createServer(app);
-const io = new Server(server, {
-  // TODO IMPORTANT is this only needed in dev env?
-  cors: { origin: 'http://localhost:1212', methods: ['GET', 'POST'] },
-});
+const ioOptions = isDevEnv
+  ? {
+      // this only needed in dev env since requests come from the webpack-dev-server
+      cors: { origin: 'http://localhost:1212', methods: ['GET', 'POST'] },
+    }
+  : {};
+const io = new Server(server, ioOptions);
 
 io.on('connection', (socket: Socket) => {
   socket.on('phraseSend', (data) => {
