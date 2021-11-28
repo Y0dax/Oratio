@@ -11,6 +11,7 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
+import child_process from 'child_process';
 import {
   app,
   BrowserWindow,
@@ -23,7 +24,6 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import keytar from 'keytar';
 import MenuBuilder from './menu';
-import server from './server/server';
 import TwitchAuth from './TwitchAuth';
 
 export default class AppUpdater {
@@ -37,6 +37,7 @@ export default class AppUpdater {
 // app.commandLine.appendSwitch('disable-gpu-compositing');
 // app.commandLine.appendSwitch('disable-gpu');
 let mainWindow: BrowserWindow | null = null;
+const isDevEnv = process.env.NODE_ENV === 'development';
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -64,10 +65,7 @@ const installExtensions = async () => {
 };
 
 const createWindow = async () => {
-  if (
-    process.env.NODE_ENV === 'development' ||
-    process.env.DEBUG_PROD === 'true'
-  ) {
+  if (isDevEnv || process.env.DEBUG_PROD === 'true') {
     await installExtensions();
   }
 
@@ -92,7 +90,7 @@ const createWindow = async () => {
     },
   });
 
-  if (process.env.NODE_ENV === 'development') {
+  if (isDevEnv) {
     mainWindow.loadURL(
       `http://localhost:${
         process.env.PORT || '1212'
@@ -126,7 +124,6 @@ const createWindow = async () => {
       app.quit();
     }
     globalShortcut.unregisterAll();
-    server.close();
   });
 
   const menuBuilder = new MenuBuilder(mainWindow);
@@ -150,7 +147,6 @@ app.on('window-all-closed', () => {
     app.quit();
   }
   globalShortcut.unregisterAll();
-  server.close();
 });
 
 app
@@ -171,9 +167,31 @@ app
       }
     });
 
-    server.listen(4563, () => {
-      console.log(`Server running on http://localhost:4563`);
-    });
+    const ASSETS_PATH = app.isPackaged
+      ? path.join(process.resourcesPath, 'assets')
+      : path.join(__dirname, '../assets');
+
+    // start our server in a separate process to keep main/server performance indipendent
+    // NOTE: using child_process over hidden renderer/webworker since we don't need
+    // access to electron on the server and a forked process might be more lightweight?
+    // while a webworker might not be able to handle/use? all the things we need
+    //
+    // will close automatically when this process exits
+    const serverProc = child_process.fork(`${ASSETS_PATH}/dist/server.js`);
+    if (serverProc !== null) {
+      if (serverProc.stdout !== null) {
+        serverProc.stdout.on('data', (data) => {
+          console.log(`server stdout:\n${data}`);
+        });
+      }
+      if (serverProc.stderr !== null) {
+        serverProc.stderr.on('data', (data) => {
+          console.log(`server stderr:\n${data}`);
+        });
+      }
+
+      serverProc.send({ action: 'listen', port: 4563 });
+    }
 
     return mainWindow;
   })

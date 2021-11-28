@@ -17,32 +17,28 @@ app.set('view engine', 'ejs');
 app.engine('ejs', require('ejs').__express);
 
 const isDevEnv = process.env.NODE_ENV === 'development';
-// removed  || process.env.DEBUG_PROD === 'true'
-// since path was wrong
-const resourcePath = isDevEnv ? '' : '/resources';
+// dev:
+// server.js folder (__dirname):  \Oratio\assets\dist
+// server process.cwd():  \Oratio
+// prod:
+// server.js folder (__dirname):  \Oratio\release\win-unpacked\resources\assets\dist
+// server proces.cwd():  \Oratio\release\win-unpacked (where Oratio.exe is)
+const assetsPath = '..';
 
-app.set(
-  'views',
-  path.join(__dirname, `../..${resourcePath}/assets/dist/views`)
-);
+app.set('views', path.join(__dirname, `${assetsPath}/dist/views`));
 
-app.use(
-  '/',
-  express.static(
-    path.join(__dirname, `../..${resourcePath}/assets/dist/static`)
-  )
-);
+app.use('/', express.static(path.join(__dirname, `${assetsPath}/dist/static`)));
 app.use(
   '/assets/sounds',
-  express.static(path.join(__dirname, `../..${resourcePath}/assets/sounds`))
+  express.static(path.join(__dirname, `${assetsPath}/sounds`))
 );
 app.use(
   '/assets/emotes',
-  express.static(path.join(__dirname, `../..${resourcePath}/assets/emotes`))
+  express.static(path.join(__dirname, `${assetsPath}/emotes`))
 );
 
 const manifest = fs.readFileSync(
-  path.join(__dirname, `../..${resourcePath}/assets/dist/static/manifest.json`),
+  path.join(__dirname, `${assetsPath}/dist/static/manifest.json`),
   'utf-8'
 );
 
@@ -57,7 +53,7 @@ app.get('/', (req: express.Request, res: express.Response) => {
     sheets.collect(React.createElement(App))
   );
   const css = sheets.toString();
-  res.render('display', { assets, component, css });
+  res.render('display', { assets, component, css, isDevEnv });
 });
 
 // Client bundle throws a lot of errors attempting to package static emote libraries
@@ -87,6 +83,18 @@ io.on('connection', (socket: Socket) => {
   socket.on('phraseSend', (data) => {
     socket.broadcast.emit('phraseRender', data);
   });
+});
+
+process.on('message', (m) => {
+  if (m.action === 'listen') {
+    const port = m.port || 4563;
+    server.listen(port, () => {
+      console.log(`Server running on http://localhost:${port}`);
+    });
+  } else if (m.action === 'stop') {
+    server.close();
+    process.exit(0);
+  }
 });
 
 export default server;
