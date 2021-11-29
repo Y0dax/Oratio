@@ -140,7 +140,10 @@ function SpeechPhrase(props: any) {
               // was fully displayed on screen but reached the top of the viewport, where
               // now no portion of the element is visible anymore
               sentRemoveAction = true;
-              props.dispatch({ type: 'shift', id: props.runningId });
+              props.dispatchRef.current({
+                type: 'remove',
+                id: props.runningId,
+              });
             }
           }
         });
@@ -208,7 +211,7 @@ function SpeechPhrase(props: any) {
         setTimeout(() => {
           if (!sentRemoveAction) {
             sentRemoveAction = true;
-            props.dispatch({ type: 'shift', id: props.runningId });
+            props.dispatchRef.current({ type: 'remove', id: props.runningId });
           }
         }, timeout);
       }
@@ -227,30 +230,83 @@ interface Phrase {
   runningId: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function reducer(state: any, action: any) {
-  switch (action.type) {
-    case 'push':
-      return { phrases: [...state.phrases, action.phrase] };
-    case 'shift':
-      // NOTE: changed this to remove a specific id since:
-      // shorter messages that are newer could get removed before an older and longer
-      // message will finish to animate and thus the old message will be removed
-      // instead of the new one since .slice(1) just removes the oldest message
-      return {
-        phrases: state.phrases.filter(
-          (phrase: Phrase) => phrase.runningId !== action.id
-        ),
-      };
-    default:
-      return state;
-  }
-}
+type State = { phrases: Phrase[] };
 
 export default function OBS() {
-  const [state, dispatch] = useReducer(reducer, { phrases: [] });
+  // state will only update on a re-render...
+  const stateRef: React.MutableRefObject<State> = useRef({
+    phrases: [],
+  });
 
-  // Only register ipc speech callback once after component is mounted
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function reducer(state: any, action: any) {
+    let result: State;
+    switch (action.type) {
+      case 'push':
+        result = { phrases: [...state.phrases, action.phrase] };
+        break;
+      case 'shift':
+        result = { phrases: state.phrases.slice(1) };
+        break;
+      case 'remove': {
+        result = {
+          phrases: state.phrases.filter(
+            (phrase: Phrase) => phrase.runningId !== action.id
+          ),
+        };
+        break;
+      }
+      default:
+        result = state;
+        break;
+    }
+
+    // this react architecture turns such a simple thing into an absolute clusterfuck
+    stateRef.current = result;
+
+    return result;
+  }
+
+  const [state, dispatch] = useReducer(reducer, { phrases: [] });
+  // useRef can be thought of as a instance variable for functional components
+  const waiting: React.MutableRefObject<{ [id: number]: boolean }> = useRef({});
+  const wrappedDispatch = useRef((action: { type: string; id?: number }) => {
+    if (action.type === 'remove') {
+      // we know id will not be undefined when action==="shift"
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const id: number = action.id!;
+      // state will only update on re-render and since this is a closure we will be
+      // using the initial state forever -> use a Ref
+      const oldest =
+        stateRef.current.phrases.length > 0
+          ? stateRef.current.phrases[0].runningId
+          : id;
+      if (id > oldest) {
+        // we don't allow removing phrases that aren't the last phrase, so we keep
+        // track of items that are waiting for removal
+        waiting.current[id] = true;
+      } else {
+        const youngerSibling = id + 1;
+        const removeNext = waiting.current[youngerSibling];
+        if (removeNext === true) {
+          const REMOVE_DELAY = 500; // ms
+          // remove next younger sibling that is waiting with a delay
+          // we call ourselves so other waiting siblings will get removed as well
+          setTimeout(() => {
+            wrappedDispatch.current({ type: 'remove', id: youngerSibling });
+          }, REMOVE_DELAY);
+          // remove element from waiting q
+          delete waiting.current[youngerSibling];
+        }
+
+        dispatch({ type: 'shift' });
+      }
+    } else {
+      dispatch(action);
+    }
+  });
+
+  // useEffect runs after the first render
   useEffect(() => {
     let runningId = 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -259,6 +315,7 @@ export default function OBS() {
       dispatch({ type: 'push', phrase: { message, key, runningId } });
       runningId += 1;
     });
+    // Only register ipc speech callback once after component is mounted
   }, []);
 
   const classes = useStyles();
@@ -275,7 +332,7 @@ export default function OBS() {
               key={phrase.key}
               runningId={phrase.runningId}
               message={phrase.message}
-              dispatch={dispatch}
+              dispatchRef={wrappedDispatch}
             />
           );
         })}
