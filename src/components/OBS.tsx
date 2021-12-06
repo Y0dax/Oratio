@@ -87,7 +87,10 @@ function SpeechPhrase(props: any) {
     volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
   });
   const timeBetweenChars: number = 150 - speed;
-  const emojiRegex = /:([^:]+):/g;
+  // sometimes the regular emoji codes can be followed by optional modifiers
+  // that start with a double colon, but uEmojiParser doesn't support them
+  // since twitter/github etc. dont use them
+  const emojiRegex = /:([^:\s]*):/g;
   const emojis = [...message.matchAll(emojiRegex)].filter(
     (e) => uEmojiParser.parse(e[0]) !== e[0]
   );

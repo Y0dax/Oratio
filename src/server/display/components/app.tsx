@@ -135,7 +135,10 @@ function SpeechPhrase(props: any) {
   // const regex = /:([^:]+):/g;
   // const emojis = [...message.matchAll(regex)];
   const timeBetweenChars: number = 150 - speed;
-  const emojiRegex = /:([^:]+):/g;
+  // sometimes the regular emoji codes can be followed by optional modifiers
+  // that start with a double colon, but uEmojiParser doesn't support them
+  // since twitter/github etc. dont use them
+  const emojiRegex = /:([^:\s]*):/g;
   const emojis = [...message.matchAll(emojiRegex)];
   const emotes = [...message.matchAll(/\w+/g)].filter(
     (e) => e[0] in emoteNameToUrl
@@ -235,9 +238,13 @@ function SpeechPhrase(props: any) {
                 emojiContainer.innerHTML = data.value;
                 emojiContainer.children[0].classList.add(classes.emoji);
                 speechDisplay.current.appendChild(emojiContainer);
-              } // else {
-              //   playSound = false;
-              // }
+              } else {
+                // no emoji found -> output it as normal text, which is probably
+                // better than not outputting anything at all
+                const tempTextContainer = document.createElement('span');
+                tempTextContainer.textContent = emojiString;
+                speechDisplay.current.appendChild(tempTextContainer);
+              }
               return emojiString;
             })
             .catch((error) => {
