@@ -124,11 +124,6 @@ function SpeechPhrase(props: any) {
       (entries, _observer) => {
         entries.forEach((entry) => {
           if (entry.target === speechDisplay.current) {
-            // NOTE: an intersection with the viewport only triggers when the
-            // element touches one of the edge of the viewport, so it won't fire
-            // when an object enters the screen without touching any edge
-            // because of this intersectionRatio in this case mean how far is
-            // the element outside of the screen
             if (!wasOnScreen) {
               if (entry.isIntersecting && entry.intersectionRatio >= 1) {
                 // element was fully visible on the viewport
@@ -136,6 +131,9 @@ function SpeechPhrase(props: any) {
               }
             } else if (
               !entry.isIntersecting &&
+              // NOTE: an intersection with the viewport only triggers on the thresholds
+              // that were passed in the options obj, so techinchally don't have to check
+              // this
               entry.intersectionRatio <= 0 &&
               !sentRemoveAction &&
               i >= message.length
