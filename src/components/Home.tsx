@@ -14,6 +14,9 @@ import SendIcon from '@material-ui/icons/Send';
 import MicOffIcon from '@material-ui/icons/MicOff';
 import SettingsIcon from '@material-ui/icons/Settings';
 import RefreshIcon from '@material-ui/icons/Refresh';
+import Checkbox from '@material-ui/core/Checkbox';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import { red, green } from '@material-ui/core/colors';
 import { BrowserWindow, remote, ipcRenderer } from 'electron';
 import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
@@ -529,6 +532,11 @@ export default function Home() {
     };
   });
 
+  const azureApiKey = ipcRenderer.sendSync('getAzureKey');
+  const [ttsActive, setTTSActive] = React.useState(
+    localStorage.getItem('ttsActive') || '0'
+  );
+
   const textHistory: string[] = [];
   let textHistoryPos: number = textHistory.length;
 
@@ -557,6 +565,11 @@ export default function Home() {
         emoteNameToUrl: JSON.parse(
           localStorage.getItem('emoteNameToUrl') || ''
         ),
+        ttsActive: ttsActive === '1',
+        azureKey: azureApiKey || '',
+        azureRegion: localStorage.getItem('azureRegion') || '',
+        azureVoiceLang: localStorage.getItem('azureVoiceLang') || '',
+        azureVoiceName: localStorage.getItem('azureVoiceName') || '',
       },
     });
     // post the same message in twitch chat
@@ -689,7 +702,7 @@ export default function Home() {
                   autoFocus
                 />
               </Grid>
-              <Grid container item xs={12} justify-content="flex-end">
+              <Grid container item xs={12} justify-content="flex-start">
                 <Button
                   id="send-text"
                   variant="contained"
@@ -700,6 +713,20 @@ export default function Home() {
                 >
                   {t('Send')} <SendIcon className={classes.buttonIcon} />
                 </Button>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      style={ ttsActive === '0' ? { color: red[500] } : { color: green[500] } }
+                      checked={ttsActive === '1'}
+                      disabled={azureApiKey === undefined || azureApiKey === ''}
+                      onChange={(event) => {
+                        setTTSActive(event.currentTarget.checked ? '1' : '0')
+                      }}
+                    />
+                  }
+                  label={t('TTS active')}
+                  labelPlacement="start"
+                />
               </Grid>
             </Grid>
           </form>
