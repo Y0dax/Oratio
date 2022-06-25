@@ -236,6 +236,7 @@
     "history": "^5.0.0",
     "howler": "^2.2.1",
     "i18next": "^20.2.1",
+    "microsoft-cognitiveservices-speech-sdk": "^1.22.0",
     "open-file-explorer": "^1.0.2",
     "react": "^17.0.2",
     "react-color": "^2.19.3",

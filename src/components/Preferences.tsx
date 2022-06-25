@@ -9,6 +9,7 @@ import { Button, Grid } from '@material-ui/core';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import InsertEmoticonIcon from '@material-ui/icons/InsertEmoticon';
+import RecordVoiceOverIcon from '@material-ui/icons/RecordVoiceOver';
 import * as Theme from './Theme';
 import FontSizeSlider from './settings/FontSizeSlider';
 import FontColorPicker from './settings/FontColorPicker';
@@ -87,13 +88,26 @@ export default function Preferences() {
               <Grid item xs={12}>
                 <Link to="/emotes" className={classes.link}>
                   <Button
-                    id="open-preferences"
+                    id="open-preferences-emotes"
                     variant="contained"
                     className={classes.button}
                     color="primary"
                   >
                     <InsertEmoticonIcon className={classes.emoteIcon} />
                     {t('Manage Emotes')}
+                  </Button>
+                </Link>
+              </Grid>
+              <Grid item xs={12}>
+                <Link to="/tts" className={classes.link}>
+                  <Button
+                    id="open-preferences-tts"
+                    variant="contained"
+                    className={classes.button}
+                    color="primary"
+                  >
+                    <RecordVoiceOverIcon className={classes.emoteIcon} />
+                    {t('Text To Speech Settings')}
                   </Button>
                 </Link>
               </Grid>

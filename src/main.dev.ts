@@ -237,3 +237,11 @@ ipcMain.on('getTwitchToken', async (event, channelName: string) => {
     event.returnValue = await keytar.getPassword('Oratio-Twitch', channelName);
   }
 });
+
+ipcMain.on('getAzureKey', async (event) => {
+  event.returnValue = await keytar.getPassword('Oratio-Azure', 'main');
+});
+
+ipcMain.on('setAzureKey', async (_event, key: string) => {
+  keytar.setPassword('Oratio-Azure', 'main', key);
+});

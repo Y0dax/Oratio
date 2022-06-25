@@ -9,6 +9,7 @@ import OBS from './components/OBS';
 import Preferences from './components/Preferences';
 import Emotes from './components/Emotes';
 import Home from './components/Home';
+import TTSSettings from './components/TTSSettings';
 import enTranslations from './translations/en';
 import jaTranslations from './translations/ja';
 import deTranslations from './translations/de';
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="/obs" component={OBS} />
         <Route path="/preferences" component={Preferences} />
         <Route path="/emotes" component={Emotes} />
+        <Route path="/tts" component={TTSSettings} />
       </Switch>
     </Router>
   );
