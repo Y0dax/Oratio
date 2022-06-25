@@ -5,6 +5,13 @@ import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Howl } from 'howler';
 import { io } from 'socket.io-client';
 
+import {
+  SpeechConfig,
+  SpeechSynthesizer,
+  AudioConfig,
+  VoiceInfo,
+} from 'microsoft-cognitiveservices-speech-sdk';
+
 const socket = io();
 const DEFAULT_TIMEOUT = 4000;
 
@@ -157,6 +164,28 @@ function SpeechPhrase(props: any) {
     speechDisplay.current.style.color = fontColor;
     speechDisplay.current.style.fontWeight = fontWeight;
 
+    if (settings.ttsActive) {
+      // TODO check we have all neccessary settings
+      const speechConfig = SpeechConfig.fromSubscription(settings.azureApiKey, settings.azureRegion);
+      speechConfig.speechSynthesisLanguage = settings.azureVoiceLang;
+      speechConfig.speechSynthesisVoiceName = settings.azureVoiceName;
+      const audioConfig = AudioConfig.fromDefaultSpeakerOutput();
+
+      const synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
+      synthesizer.speakTextAsync(
+          "Synthesizing directly to speaker output.",
+          result => {
+              if (result) {
+                  synthesizer.close();
+                  return result.audioData;
+              }
+          },
+          error => {
+              console.log(error);
+              synthesizer.close();
+          });
+    }
+
     // `i` is the message character index
     let i = 0;
     let wasOnScreen = false;
@@ -298,6 +327,7 @@ type State = {
   phrases: Phrase[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   settings: { [name: string]: any };
+  speechSynth: SpeechSynthesizer | null;
 };
 
 export default function App() {
@@ -305,7 +335,18 @@ export default function App() {
   const stateRef: React.MutableRefObject<State> = useRef({
     phrases: [],
     settings: {},
+    speechSynth: null,
   });
+
+  // TODO re-use synth
+  //useEffect(() => {
+  //  const active = stateRef.current.settings.ttsActive
+  //  if (active && stateRef.current.speechSynth === null) {
+  //    
+  //  } else {
+  //  }
+
+  //}, [stateRef.current.settings.ttsActive]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function reducer(state: any, action: any) {
