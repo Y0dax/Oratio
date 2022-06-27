@@ -8,18 +8,18 @@
         script-src 'self' http://localhost:1212 'unsafe-eval';
         default-src 'self' http://localhost:1212;
         style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
-        media-src 'self' https://*.tts.speech.microsoft.com;
+        media-src 'self' blob: https://*.tts.speech.microsoft.com;
         font-src 'self' https://fonts.gstatic.com;
-        connect-src 'self' ws://localhost:1212;
+        connect-src 'self' ws://localhost:1212 wss://*.tts.speech.microsoft.com;
         img-src 'self' data:;">
     <% } else { %>
       <meta http-equiv="Content-Security-Policy" content="
         script-src 'self';
         default-src 'self';
         style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
-        media-src 'self' https://*.tts.speech.microsoft.com;
+        media-src 'self' blob: https://*.tts.speech.microsoft.com;
         font-src 'self' https://fonts.gstatic.com;
-        connect-src 'self';
+        connect-src 'self' wss://*.tts.speech.microsoft.com;
         img-src 'self' data:;">
     <% } %>
     <style id="jss-server-side"><%= css %></style>

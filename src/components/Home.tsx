@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Grid from '@material-ui/core/Grid';
 import TextField from '@material-ui/core/TextField';
@@ -532,9 +532,9 @@ export default function Home() {
     };
   });
 
-  const azureApiKey = ipcRenderer.sendSync('getAzureKey');
+  const azureApiKey = useRef(ipcRenderer.sendSync('getAzureKey'));
   const [ttsActive, setTTSActive] = React.useState(
-    localStorage.getItem('ttsActive') || '0'
+    localStorage.getItem('ttsActive') === '1'
   );
 
   const textHistory: string[] = [];
@@ -565,8 +565,8 @@ export default function Home() {
         emoteNameToUrl: JSON.parse(
           localStorage.getItem('emoteNameToUrl') || ''
         ),
-        ttsActive: ttsActive === '1',
-        azureKey: azureApiKey || '',
+        ttsActive,
+        azureApiKey: azureApiKey.current || '',
         azureRegion: localStorage.getItem('azureRegion') || '',
         azureVoiceLang: localStorage.getItem('azureVoiceLang') || '',
         azureVoiceName: localStorage.getItem('azureVoiceName') || '',
@@ -716,11 +716,20 @@ export default function Home() {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      style={ ttsActive === '0' ? { color: red[500] } : { color: green[500] } }
-                      checked={ttsActive === '1'}
-                      disabled={azureApiKey === undefined || azureApiKey === ''}
+                      style={
+                        ttsActive ? { color: green[500] } : { color: red[500] }
+                      }
+                      checked={ttsActive}
+                      disabled={
+                        azureApiKey.current === undefined ||
+                        azureApiKey.current === ''
+                      }
                       onChange={(event) => {
-                        setTTSActive(event.currentTarget.checked ? '1' : '0')
+                        setTTSActive(event.currentTarget.checked);
+                        localStorage.setItem(
+                          'ttsActive',
+                          event.currentTarget.checked ? '1' : '0'
+                        );
                       }}
                     />
                   }
