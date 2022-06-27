@@ -6,13 +6,16 @@ const CopyPlugin = require('copy-webpack-plugin');
 const serverConfig = {
   name: 'server',
   entry: {
-    server: path.resolve(__dirname, 'src/server', 'server.ts'),
+    // server: [path.resolve(__dirname, 'src/server', 'server.ts')],
+    // server: ['core-js', 'regenerator-runtime/runtime', path.resolve(__dirname, 'src/server', 'server.ts')],
+    server: ['core-js', path.resolve(__dirname, 'src/server', 'server.ts')],
   },
   mode: 'development',
   devtool: 'source-map',
   output: {
     path: path.resolve(__dirname, 'assets/dist'),
     filename: '[name].js',
+    publicPath: '',
   },
 
   // this works but bundles all the dependencies (with dupes) into server.js
@@ -26,21 +29,56 @@ const serverConfig = {
   externals: [],
   resolve: {
     extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
-    modules: [path.join(__dirname, 'src/server'), 'node_modules'],
+    modules: [
+      path.join(__dirname, 'src/server'),
+      path.resolve(__dirname, 'node_modules'),
+    ], // 'node_modules'],
   },
   module: {
     rules: [
       {
-        test: /\.tsx?$/,
+        test: /\.[jt]sx?$/,
         loader: 'babel-loader',
-        exclude: /node_modules/,
+        // exclude node_modules so we don't transpile core-js with babel
+        // exclude: /node_modules/,
+        exclude: [/\bcore-js\b/, /\bwebpack\/buildin\b/],
+        options: {
+          // modules: cjs basically does the same as plugin-transform-modules-commonjs
+          presets: [
+            [
+              '@babel/preset-env',
+              {
+                modules: 'cjs',
+                useBuiltIns: 'usage',
+                corejs: '3.10.1',
+              },
+            ],
+            '@babel/preset-typescript',
+            '@babel/preset-react',
+          ],
+          // plugins: [
+          //   // transforms import/export to require etc. but fails at runtime:
+          //   // Error: Cannot find module './objectWithoutPropertiesLoose.js'
+          //   '@babel/plugin-transform-modules-commonjs',
+          //   '@babel/plugin-transform-runtime',
+          //   '@babel/plugin-proposal-export-default-from',
+          // ],
+          targets: { node: '12.18' },
+          // allows import/export if present otherwise treated as script -> does not work
+          sourceType: 'unambiguous',
+        },
       },
+      // {
+      //   test: /\.tsx?$/,
+      //   loader: 'ts-loader',
+      //   exclude: /node_modules/,
+      // }
     ],
   },
 
   target: 'node',
   node: {
-    __dirname: false,
+    // __dirname: false,
   },
   plugins: [
     new CopyPlugin({
@@ -62,12 +100,12 @@ const clientConfig = {
     publicPath: '',
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js'],
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
   },
   module: {
     rules: [
       {
-        test: /\.tsx?$/,
+        test: /\.[jt]sx?$/,
         loader: 'babel-loader',
       },
       {
