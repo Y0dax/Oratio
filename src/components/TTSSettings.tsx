@@ -54,7 +54,7 @@ const useStyles = makeStyles(() =>
   })
 );
 
-const bcp47ToLanuageName: { [key: string]: string} = {
+const bcp47ToLanuageName: { [key: string]: string } = {
   'af-ZA': 'Afrikaans (South Africa)',
   'am-ET': 'Amharic (Ethiopia)',
   'ar-DZ': 'Arabic (Algeria)',
@@ -187,7 +187,10 @@ const bcp47ToLanuageName: { [key: string]: string} = {
 };
 
 async function getVoicesAsync(
-  key: string, region: string, lang: string, ref: React.MutableRefObject<VoiceInfo[]>
+  key: string,
+  region: string,
+  lang: string,
+  ref: React.MutableRefObject<VoiceInfo[]>
 ) {
   const speechConfig = SpeechConfig.fromSubscription(key, region);
   const audioConfig = AudioConfig.fromDefaultSpeakerOutput();
@@ -219,11 +222,17 @@ export default function TTSSettings() {
   useEffect(() => {
     const apiKey = ipcRenderer.sendSync('getAzureKey');
     async function updateState() {
-      await getVoicesAsync(apiKey, azureRegion, azureVoiceLang, availableVoices);
+      await getVoicesAsync(
+        apiKey,
+        azureRegion,
+        azureVoiceLang,
+        availableVoices
+      );
       // do this here so the re-render happens after getting voices
       setAzureApiKey(apiKey);
     }
-    if (apiKey !== undefined) {
+    // eslint-disable-next-line eqeqeq
+    if (apiKey != undefined && apiKey !== '') {
       updateState();
     }
   }, []);
@@ -243,13 +252,21 @@ export default function TTSSettings() {
                 value={azureApiKey}
                 error={apiKeyErrorMessage !== ''}
                 helperText={apiKeyErrorMessage}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
                   const trimmed = e.target.value.trim();
                   if (!trimmed.match(/[a-fA-F0-9]{32}/)) {
                     setApiKeyErrorMessage('Invalid API key');
                   } else {
                     setApiKeyErrorMessage('');
                     ipcRenderer.send('setAzureKey', trimmed);
+                    // get voices assuming we didn't have a valid key before, so voices should be empty
+                    // need to await here so the re-render happens after we got new voices
+                    await getVoicesAsync(
+                      trimmed,
+                      azureRegion,
+                      azureVoiceLang,
+                      availableVoices
+                    );
                   }
                   setAzureApiKey(trimmed);
                 }}
@@ -283,15 +300,21 @@ export default function TTSSettings() {
                     if (event.target.value !== azureVoiceLang) {
                       setAzureVoiceName('');
                       await getVoicesAsync(
-                        azureApiKey, azureRegion, event.target.value, availableVoices);
+                        azureApiKey,
+                        azureRegion,
+                        event.target.value,
+                        availableVoices
+                      );
                       // TODO validation?
-                      localStorage.setItem('azureVoiceLang', event.target.value);
+                      localStorage.setItem(
+                        'azureVoiceLang',
+                        event.target.value
+                      );
                       setAzureVoiceLang(event.target.value);
                     }
                   }}
                 >
-                  {
-                    Object.entries(bcp47ToLanuageName).map(
+                  {Object.entries(bcp47ToLanuageName).map(
                       ([code, name]: [string, string]) => (
                       <MenuItem key={code} value={code}>
                         {name}
@@ -318,7 +341,10 @@ export default function TTSSettings() {
                   }}
                 >
                   {availableVoices.current.map((voiceInfo: VoiceInfo) => (
-                    <MenuItem key={voiceInfo.shortName} value={voiceInfo.shortName}>
+                    <MenuItem
+                      key={voiceInfo.shortName}
+                      value={voiceInfo.shortName}
+                    >
                       {voiceInfo.localName}
                     </MenuItem>
                   ))}
