@@ -28,10 +28,7 @@ import {
 } from 'microsoft-cognitiveservices-speech-sdk';
 import * as tmi from 'tmi.js';
 import * as Theme from './Theme';
-
 import { lowercaseToEmoteName } from './Emotes';
-import TTSSettings from './TTSSettings';
-import { ConsoleLoggingListener } from 'microsoft-cognitiveservices-speech-sdk/distrib/lib/src/common.browser/ConsoleLoggingListener';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -563,6 +560,7 @@ async function playTTS(ttsState: React.MutableRefObject<any>, phrase: string) {
         synthesizer.close();
         return result.audioData;
       }
+      return undefined;
     },
     (error) => {
       console.log(error);
@@ -594,6 +592,9 @@ export default function Home() {
   const [ttsActive, setTTSActive] = React.useState(
     localStorage.getItem('ttsActive') === '1'
   );
+  const [textSoundMuted, setTextSoundMuted] = React.useState(
+    localStorage.getItem('textSoundMuted') === '1'
+  );
 
   const textHistory: string[] = [];
   let textHistoryPos: number = textHistory.length;
@@ -618,7 +619,9 @@ export default function Home() {
         fontColor: localStorage.getItem('fontColor') || '#ffffff',
         fontWeight: parseInt(localStorage.getItem('fontWeight') || '400', 10),
         soundFileName: localStorage.getItem('soundFileName'),
-        volume: parseFloat(localStorage.getItem('volume') || '50') / 100,
+        volume: textSoundMuted
+          ? 0
+          : parseFloat(localStorage.getItem('volume') || '50') / 100,
         bubbleColor: localStorage.getItem('bubbleColor') || '#000',
         emoteNameToUrl: JSON.parse(
           localStorage.getItem('emoteNameToUrl') || ''
@@ -792,6 +795,27 @@ export default function Home() {
                     />
                   }
                   label={t('TTS active')}
+                  labelPlacement="start"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      style={
+                        textSoundMuted
+                          ? { color: green[500] }
+                          : { color: red[500] }
+                      }
+                      checked={textSoundMuted}
+                      onChange={(event) => {
+                        setTextSoundMuted(event.currentTarget.checked);
+                        localStorage.setItem(
+                          'textSoundMuted',
+                          event.currentTarget.checked ? '1' : '0'
+                        );
+                      }}
+                    />
+                  }
+                  label={t('Mute text sound')}
                   labelPlacement="start"
                 />
               </Grid>
