@@ -20,10 +20,18 @@ import { red, green } from '@material-ui/core/colors';
 import { BrowserWindow, remote, ipcRenderer } from 'electron';
 import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
+import {
+  SpeechConfig,
+  SpeechSynthesizer,
+  AudioConfig,
+  SpeakerAudioDestination,
+} from 'microsoft-cognitiveservices-speech-sdk';
 import * as tmi from 'tmi.js';
 import * as Theme from './Theme';
 
 import { lowercaseToEmoteName } from './Emotes';
+import TTSSettings from './TTSSettings';
+import { ConsoleLoggingListener } from 'microsoft-cognitiveservices-speech-sdk/distrib/lib/src/common.browser/ConsoleLoggingListener';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -519,6 +527,50 @@ function ChatStatus({
   );
 }
 
+async function playTTS(ttsState: React.MutableRefObject<any>, phrase: string) {
+  // TODO should fetch these of a queue or sth. so we get a reliable delay between phrases
+  // (e.g. waiting[] in state and then q it when an audio is already playing and fetch one
+  //  off the end in onAudioEnd with a constant delay)
+  if (ttsState.current.playing) {
+    const TTS_WAIT_WHILE_PLAYING_DELAY_MS = 250;
+    setTimeout(() => {
+      playTTS(ttsState, phrase);
+    }, TTS_WAIT_WHILE_PLAYING_DELAY_MS);
+    return;
+  }
+  // TODO check we have all neccessary settings
+  const speechConfig = SpeechConfig.fromSubscription(
+    ttsState.current.apiKey,
+    ttsState.current.region
+  );
+  speechConfig.speechSynthesisLanguage = ttsState.current.voiceLang;
+  speechConfig.speechSynthesisVoiceName = ttsState.current.voiceName;
+
+  const player = new SpeakerAudioDestination();
+  // setting the volume is broken
+  // player.volume = 0;
+  player.onAudioEnd = () => {
+    ttsState.current.playing = false;
+  };
+  const audioConfig = AudioConfig.fromSpeakerOutput(player);
+
+  const synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
+  synthesizer.speakTextAsync(
+    phrase,
+    (result) => {
+      if (result) {
+        ttsState.current.playing = true;
+        synthesizer.close();
+        return result.audioData;
+      }
+    },
+    (error) => {
+      console.log(error);
+      synthesizer.close();
+    }
+  );
+}
+
 export default function Home() {
   const classes = useStyles();
   const { t } = useTranslation();
@@ -532,7 +584,13 @@ export default function Home() {
     };
   });
 
-  const azureApiKey = useRef(ipcRenderer.sendSync('getAzureKey'));
+  const ttsState = useRef({
+    apiKey: ipcRenderer.sendSync('getAzureKey'),
+    region: localStorage.getItem('azureRegion') || '',
+    voiceLang: localStorage.getItem('azureVoiceLang') || '',
+    voiceName: localStorage.getItem('azureVoiceName') || '',
+    playing: false,
+  });
   const [ttsActive, setTTSActive] = React.useState(
     localStorage.getItem('ttsActive') === '1'
   );
@@ -565,11 +623,6 @@ export default function Home() {
         emoteNameToUrl: JSON.parse(
           localStorage.getItem('emoteNameToUrl') || ''
         ),
-        ttsActive,
-        azureApiKey: azureApiKey.current || '',
-        azureRegion: localStorage.getItem('azureRegion') || '',
-        azureVoiceLang: localStorage.getItem('azureVoiceLang') || '',
-        azureVoiceName: localStorage.getItem('azureVoiceName') || '',
       },
     });
     // post the same message in twitch chat
@@ -578,6 +631,11 @@ export default function Home() {
     }
     if (win !== undefined) {
       win.webContents.send('speech', phrase);
+    }
+
+    // play TTS
+    if (ttsActive) {
+      playTTS(ttsState, phrase);
     }
 
     addToHistory(phrase);
@@ -721,8 +779,8 @@ export default function Home() {
                       }
                       checked={ttsActive}
                       disabled={
-                        azureApiKey.current === undefined ||
-                        azureApiKey.current === ''
+                        ttsState.current.apiKey === undefined ||
+                        ttsState.current.apiKey === ''
                       }
                       onChange={(event) => {
                         setTTSActive(event.currentTarget.checked);

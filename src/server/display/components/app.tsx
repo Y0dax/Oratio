@@ -5,12 +5,6 @@ import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Howl } from 'howler';
 import { io } from 'socket.io-client';
 
-import {
-  SpeechConfig,
-  SpeechSynthesizer,
-  AudioConfig,
-} from 'microsoft-cognitiveservices-speech-sdk';
-
 const socket = io();
 const DEFAULT_TIMEOUT = 4000;
 
@@ -162,32 +156,6 @@ function SpeechPhrase(props: any) {
     speechDisplay.current.style.fontSize = fontSize;
     speechDisplay.current.style.color = fontColor;
     speechDisplay.current.style.fontWeight = fontWeight;
-
-    if (settings.ttsActive) {
-      // TODO check we have all neccessary settings
-      const speechConfig = SpeechConfig.fromSubscription(
-        settings.azureApiKey,
-        settings.azureRegion
-      );
-      speechConfig.speechSynthesisLanguage = settings.azureVoiceLang;
-      speechConfig.speechSynthesisVoiceName = settings.azureVoiceName;
-      const audioConfig = AudioConfig.fromDefaultSpeakerOutput();
-
-      const synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
-      synthesizer.speakTextAsync(
-        message,
-        (result) => {
-          if (result) {
-            synthesizer.close();
-            return result.audioData;
-          }
-        },
-        (error) => {
-          console.log(error);
-          synthesizer.close();
-        }
-      );
-    }
 
     // `i` is the message character index
     let i = 0;

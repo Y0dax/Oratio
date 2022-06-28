@@ -19,7 +19,8 @@ export const getCSP = () => {
 default-src 'self' http://localhost:4563;
 style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
 font-src 'self' https://fonts.gstatic.com;
-connect-src 'self' http://localhost:4563 ws://localhost:4563 wss://irc-ws.chat.twitch.tv https://*.tts.speech.microsoft.com;
+connect-src 'self' http://localhost:4563 ws://localhost:4563 wss://irc-ws.chat.twitch.tv https://*.tts.speech.microsoft.com wss://*.tts.speech.microsoft.com;
+media-src 'self' blob: https://*.tts.speech.microsoft.com;
 img-src 'self' data:`;
 };
 
