@@ -14,6 +14,8 @@ import SendIcon from '@material-ui/icons/Send';
 import MicOffIcon from '@material-ui/icons/MicOff';
 import SettingsIcon from '@material-ui/icons/Settings';
 import RefreshIcon from '@material-ui/icons/Refresh';
+import WavesIcon from '@material-ui/icons/Waves';
+import SpeedIcon from '@material-ui/icons/Speed';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import { FormControl, InputLabel, Select } from '@material-ui/core';
@@ -30,7 +32,9 @@ import {
 } from 'microsoft-cognitiveservices-speech-sdk';
 import * as tmi from 'tmi.js';
 import * as Theme from './Theme';
+import SliderWithIconPersisted from './settings/SliderWithIconPersisted';
 import { lowercaseToEmoteName, emoteNameToUrl } from './Emotes';
+import VolumeSlider from './settings/VolumeSlider';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -74,7 +78,7 @@ const useStyles = makeStyles(() =>
       marginRight: '5px',
     },
     formControl: {
-      margin: theme.spacing(1),
+      margin: theme.spacing(0),
       minWidth: '100%',
     },
   })
@@ -597,29 +601,67 @@ const ssmlBase = (contents: string) => {
     ${contents}
 </speak>`;
 };
+
 const ssmlVoice = (voiceName: string, contents: string) => {
   return `<voice name="${voiceName}">${contents}</voice>`;
 };
+
 const ssmlStyle = (styleName: string, phrase: string) => {
+  // no style -> just insert the phrase without any markup
+  if (styleName === 'none') {
+    return phrase;
+  }
+
   return `<mstts:express-as style="${styleName}">${phrase}</mstts:express-as>`;
 };
 
-async function playTTS(ttsState: React.MutableRefObject<any>, phrase: string) {
+const ssmlProsody = (
+  pitch: number,
+  rate: number,
+  volume: number,
+  contents: string
+) => {
+  return `<prosody pitch="${pitch}%" rate="${rate}" volume="${volume}">${contents}</prosody>`;
+};
+
+type TTSSettings = {
+  apiKey: string;
+  region: string;
+  skipEmotes: boolean;
+};
+
+type TTSVoiceSettings = {
+  voiceLang: string;
+  voiceName: string;
+  voiceStyle: string;
+  // -100 -- 100 (gets added to default pitch in %)
+  voicePitch: number;
+  // 0-3 relative to normal rate
+  voiceRate: number;
+  // 0-100%
+  voiceVolume: number;
+};
+
+async function playTTS(
+  ttsSettings: TTSSettings,
+  voiceSettings: TTSVoiceSettings,
+  ttsPlaying: React.MutableRefObject<boolean>,
+  phrase: string
+) {
   // TODO should fetch these of a queue or sth. so we get a reliable delay between phrases
   // (e.g. waiting[] in state and then q it when an audio is already playing and fetch one
   //  off the end in onAudioEnd with a constant delay)
-  if (ttsState.current.playing) {
+  if (ttsPlaying.current) {
     const TTS_WAIT_WHILE_PLAYING_DELAY_MS = 250;
-    console.log('waiting on tts');// nocheckin
     setTimeout(() => {
-      playTTS(ttsState, phrase);
+      playTTS(ttsSettings, voiceSettings, ttsPlaying, phrase);
     }, TTS_WAIT_WHILE_PLAYING_DELAY_MS);
     return;
   }
 
   // TODO process phrase into words/emotes etc. before sending it to the browser source server
   let finalPhrase = phrase;
-  if (ttsState.current.skipEmotes) {
+  if (ttsSettings.skipEmotes) {
     const words = phrase.split(' ');
     finalPhrase = words
       .filter((word) => {
@@ -629,25 +671,30 @@ async function playTTS(ttsState: React.MutableRefObject<any>, phrase: string) {
   }
   // TODO check we have all neccessary settings
   const speechConfig = SpeechConfig.fromSubscription(
-    ttsState.current.apiKey,
-    ttsState.current.region
+    ttsSettings.apiKey,
+    ttsSettings.region
   );
 
   const player = new SpeakerAudioDestination();
   // setting the volume is broken
   // player.volume = 0;
   player.onAudioEnd = () => {
-    ttsState.current.playing = false;
+    ttsPlaying.current = false;
   };
   const audioConfig = AudioConfig.fromSpeakerOutput(player);
 
   const ssml = ssmlBase(
     ssmlVoice(
-      ttsState.current.voiceName,
-      // no style -> just insert the phrase without any markup
-      ttsState.current.voiceStyle === 'none'
-        ? finalPhrase
-        : ssmlStyle(ttsState.current.voiceStyle, finalPhrase)
+      voiceSettings.voiceName,
+      ssmlStyle(
+        voiceSettings.voiceStyle,
+        ssmlProsody(
+          voiceSettings.voicePitch,
+          voiceSettings.voiceRate,
+          voiceSettings.voiceVolume,
+          finalPhrase
+        )
+      )
     )
   );
 
@@ -659,7 +706,7 @@ async function playTTS(ttsState: React.MutableRefObject<any>, phrase: string) {
         if (result.errorDetails) {
           console.error(result.errorDetails);
         }
-        ttsState.current.playing = true;
+        ttsPlaying.current = true;
         synthesizer.close();
         return result.audioData;
       }
@@ -679,20 +726,6 @@ export default function Home() {
     `http://localhost:${localStorage.getItem('serverPort') || '4563'}`
   );
 
-  const ttsState = useRef({
-    apiKey: ipcRenderer.sendSync('getAzureKey'),
-    region: localStorage.getItem('azureRegion') || '',
-    voiceLang: localStorage.getItem('azureVoiceLang') || '',
-    voiceName: localStorage.getItem('azureVoiceName') || '',
-    voiceStyle: localStorage.getItem('ttsVoiceStyle') || '',
-    skipEmotes: localStorage.getItem('ttsSkipEmotes') === '1',
-    playing: false,
-  });
-  // only needed for dev env for code reloading
-  useEffect(() => {
-    console.log('resetting playing');
-    ttsState.current.playing = false;
-  }, []);
   useEffect(() => {
     return () => {
       socket.disconnect();
@@ -709,16 +742,36 @@ export default function Home() {
     localStorage.getItem('ttsVoiceStyle') || ''
   );
 
-  const textHistory: string[] = [];
-  let textHistoryPos: number = textHistory.length;
+  // these can't change between renders
+  const ttsSettingsPermanent: React.MutableRefObject<TTSSettings> = useRef({
+    apiKey: ipcRenderer.sendSync('getAzureKey') || '',
+    region: localStorage.getItem('azureRegion') || '',
+    skipEmotes: localStorage.getItem('ttsSkipEmotes') === '1',
+  });
+  const voiceLang = localStorage.getItem('azureVoiceLang') || '';
+  const voiceName = localStorage.getItem('azureVoiceName') || '';
+
+  const ttsPlaying = useRef(false);
+  // for devenv
+  useEffect(() => {
+    // TODO technichally this can cause problems where a phrase is queued up and the user
+    // goes to preferences and back which will result in the queued up phrase being
+    // played before the other can finish
+    ttsPlaying.current = false;
+  }, []);
+
+  // wrap in a ref so a re-render doesn't delete our history
+  const textHistory: React.MutableRefObject<string[]> = useRef([]);
+  let textHistoryPos: number = textHistory.current.length;
 
   const addToHistory = (text: string) => {
-    if (textHistory[textHistory.length - 1] !== text) {
-      textHistory.push(text);
-      if (textHistory.length >= 100) {
-        textHistory.shift();
+    const curTextHistory = textHistory.current;
+    if (curTextHistory[curTextHistory.length - 1] !== text) {
+      curTextHistory.push(text);
+      if (curTextHistory.length >= 100) {
+        curTextHistory.shift();
       }
-      textHistoryPos = textHistory.length;
+      textHistoryPos = curTextHistory.length;
     }
   };
 
@@ -751,7 +804,28 @@ export default function Home() {
 
     // play TTS
     if (ttsActive) {
-      playTTS(ttsState, phrase);
+      playTTS(
+        {
+          apiKey: ttsSettingsPermanent.current.apiKey,
+          region: ttsSettingsPermanent.current.region,
+          skipEmotes: ttsSettingsPermanent.current.skipEmotes,
+        },
+        {
+          voiceLang,
+          voiceName,
+          // TODO: @Performance
+          voicePitch: parseFloat(localStorage.getItem('ttsVoicePitch') || '1'),
+          voiceRate: parseFloat(localStorage.getItem('ttsVoiceRate') || '1'),
+          voiceVolume: parseInt(
+            localStorage.getItem('ttsVoiceVolume') || '100',
+            10
+          ),
+
+          voiceStyle,
+        },
+        ttsPlaying,
+        phrase
+      );
     }
 
     addToHistory(phrase);
@@ -842,16 +916,16 @@ export default function Home() {
       if (textHistoryPos > 0) {
         textHistoryPos -= 1;
       }
-      event.target.value = textHistory[textHistoryPos] || '';
+      event.target.value = textHistory.current[textHistoryPos] || '';
     }
 
     if (event.key === 'ArrowDown') {
       event.preventDefault(); // do not go to the next element.
 
-      if (textHistoryPos <= textHistory.length - 1) {
+      if (textHistoryPos <= textHistory.current.length - 1) {
         textHistoryPos += 1;
       }
-      event.target.value = textHistory[textHistoryPos] || '';
+      event.target.value = textHistory.current[textHistoryPos] || '';
     }
   }
 
@@ -895,8 +969,8 @@ export default function Home() {
                       }
                       checked={ttsActive}
                       disabled={
-                        ttsState.current.apiKey === undefined ||
-                        ttsState.current.apiKey === ''
+                        ttsSettingsPermanent.current.apiKey === undefined ||
+                        ttsSettingsPermanent.current.apiKey === ''
                       }
                       onChange={(event) => {
                         setTTSActive(event.currentTarget.checked);
@@ -934,37 +1008,77 @@ export default function Home() {
               </Grid>
             </Grid>
             {ttsActive && (
-              <Grid container direction="row" spacing={3}>
-                <Grid item xs={3}>
-                  <FormControl className={classes.formControl}>
-                    <InputLabel id="azure-voice-style-label">
-                      {t('Voice style')}
-                    </InputLabel>
-                    <Select
-                      labelId="azure-voice-style-label"
-                      id="azure-voice-style"
-                      value={voiceStyle}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        const value = e.target.value;
-                        setVoiceStyle(value);
-                        localStorage.setItem('ttsVoicestyle', value);
-                        ttsState.current.voiceStyle = value;
-                      }}
-                    >
-                      <MUIMenuItem key="none" value="none">
-                        none
-                      </MUIMenuItem>
-                      {Object.entries(voiceStyles).map(
-                        ([name, _description]: [string, string]) => (
-                          <MUIMenuItem key={name} value={name}>
-                            {name}
-                          </MUIMenuItem>
-                        )
-                      )}
-                    </Select>
-                  </FormControl>
+              <>
+                <Grid container direction="row" spacing={3}>
+                  <Grid item xs={12}>
+                    <Typography variant="h5" component="h1">
+                      {t('TTS Settings')}
+                    </Typography>
+                  </Grid>
                 </Grid>
-              </Grid>
+                <Grid container direction="row" spacing={3}>
+                  <Grid item xs={6}>
+                    <FormControl className={classes.formControl}>
+                      <InputLabel id="azure-voice-style-label">
+                        {t('Voice style')}
+                      </InputLabel>
+                      <Select
+                        labelId="azure-voice-style-label"
+                        id="azure-voice-style"
+                        value={voiceStyle}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                          const value = e.target.value;
+                          setVoiceStyle(value);
+                          localStorage.setItem('ttsVoiceStyle', value);
+                        }}
+                      >
+                        <MUIMenuItem key="none" value="none">
+                          none
+                        </MUIMenuItem>
+                        {Object.entries(voiceStyles).map(
+                          ([name, _description]: [string, string]) => (
+                            <MUIMenuItem key={name} value={name}>
+                              {name}
+                            </MUIMenuItem>
+                          )
+                        )}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <VolumeSlider
+                      persistName="ttsVoiceVolume"
+                      defaultVolume="100"
+                      label={t('Volume')}
+                      valueDisplay="auto"
+                    />
+                  </Grid>
+                </Grid>
+                <Grid container direction="row" spacing={3}>
+                  <Grid item xs={6}>
+                    <SliderWithIconPersisted
+                      persistName="ttsVoicePitch"
+                      label={t('Pitch (+/- in %)')}
+                      defaultValue="0"
+                      min={-100}
+                      max={100}
+                      step={1}
+                      icon={<WavesIcon />}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <SliderWithIconPersisted
+                      persistName="ttsVoiceRate"
+                      label={t('Rate')}
+                      defaultValue="1"
+                      min={0}
+                      max={3}
+                      step={0.01}
+                      icon={<SpeedIcon />}
+                    />
+                  </Grid>
+                </Grid>
+              </>
             )}
           </form>
           {(chat.mirrorFromChat || chat.mirrorToChat) && (

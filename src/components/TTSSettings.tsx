@@ -300,7 +300,10 @@ export default function TTSSettings() {
                   labelId="azure-voice-lang-label"
                   id="azure-voice-lang"
                   value={azureVoiceLang}
-                  onChange={async (event) => {
+                  onChange={async (
+                    event: React.ChangeEvent<HTMLSelectElement>
+                  ) => {
+                    // TODO fix event.target.value type errors
                     if (event.target.value !== azureVoiceLang) {
                       setAzureVoiceName('');
                       await getVoicesAsync(

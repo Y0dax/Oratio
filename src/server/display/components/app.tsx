@@ -122,6 +122,7 @@ function SpeechPhrase(props: any) {
 
   // TODO Test for performance impact of reading settings on every input
   const { speed } = settings;
+  // TODO changing fontsize does not work!
   const { fontSize } = settings;
   const { fontColor } = settings;
   const { fontWeight } = settings;
@@ -307,16 +308,6 @@ export default function App() {
     phrases: [],
     settings: {},
   });
-
-  // TODO re-use synth
-  //useEffect(() => {
-  //  const active = stateRef.current.settings.ttsActive
-  //  if (active && stateRef.current.speechSynth === null) {
-  //
-  //  } else {
-  //  }
-
-  //}, [stateRef.current.settings.ttsActive]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function reducer(state: any, action: any) {
