@@ -10,12 +10,13 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import InsertEmoticonIcon from '@material-ui/icons/InsertEmoticon';
 import RecordVoiceOverIcon from '@material-ui/icons/RecordVoiceOver';
+import SpeedIcon from '@material-ui/icons/Speed';
+import FormatSizeIcon from '@material-ui/icons/FormatSize';
 import * as Theme from './Theme';
-import FontSizeSlider from './settings/FontSizeSlider';
 import FontColorPicker from './settings/FontColorPicker';
 import FontBoldSlider from './settings/FontBoldSlider';
 import AudioSelector from './settings/AudioSelector';
-import TextSpeedSlider from './settings/TextSpeedSlider';
+import SliderWithIconPersisted from './settings/SliderWithIconPersisted';
 import VolumeSlider from './settings/VolumeSlider';
 import BubbleBackgroundColorPicker from './settings/BubbleBackgroundColorSlider';
 import LanguageSelector from './settings/LanguageSelector';
@@ -75,13 +76,27 @@ export default function Preferences() {
                   label={t('Volume')}
                   persistName="volume"
                   defaultVolume="25"
+                  valueDisplay="on"
                 />
               </Grid>
               <Grid item xs={6}>
-                <TextSpeedSlider />
+                <SliderWithIconPersisted
+                  persistName="textSpeed"
+                  defaultValue="75"
+                  label={t('Text Speed')}
+                  displayValue="on"
+                  icon={<SpeedIcon />}
+                />
               </Grid>
               <Grid item xs={6}>
-                <FontSizeSlider />
+                <SliderWithIconPersisted
+                  persistName="fontSize"
+                  defaultValue="48"
+                  label={t('Text Size')}
+                  displayValue="on"
+                  max={200}
+                  icon={<FormatSizeIcon />}
+                />
               </Grid>
               <Grid item xs={6}>
                 <FontBoldSlider />

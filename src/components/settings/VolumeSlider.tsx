@@ -7,10 +7,11 @@ export type VolumeSliderProps = {
   persistName: string;
   label: string;
   defaultVolume: string;
+  valueDisplay: 'on' | 'off' | 'auto';
 };
 
 export default function VolumeSlider(props: VolumeSliderProps) {
-  const { persistName, label, defaultVolume } = props;
+  const { persistName, label, defaultVolume, valueDisplay } = props;
   const [volume, setVolume] = React.useState<number>(
     parseInt(localStorage.getItem(persistName) || defaultVolume, 10)
   );
@@ -35,7 +36,7 @@ export default function VolumeSlider(props: VolumeSliderProps) {
             value={volume}
             onChange={handleVolumeChange}
             aria-labelledby="continuous-slider"
-            valueLabelDisplay="on"
+            valueLabelDisplay={valueDisplay}
           />
         </Grid>
         <Grid item>
