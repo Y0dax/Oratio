@@ -31,6 +31,7 @@ let asyncLoadingFinished = false;
 // WTF????
 // is this some kind of webpack config issue? because it would be insane if
 // this was default behaviour
+// TODO this is relative to the current cwd -> make this relative to the Oratio executable if possible
 const assetLoc =
   process.env.NODE_ENV === 'development'
     ? 'assets/emotes'
