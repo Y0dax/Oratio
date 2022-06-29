@@ -11,7 +11,11 @@ export type SliderWithIconProps = {
   defaultValue: string;
   displayValue?: 'on' | 'off' | 'auto';
   label: string;
-  icon: React.ReactElement<SvgIconProps>;
+  onChange?: (
+    event: React.ChangeEvent<unknown>,
+    value: number | number[]
+  ) => void;
+  icon?: React.ReactElement<SvgIconProps> | undefined;
 };
 export default function SliderWithIcon({
   // de-structure props object here so we can provide default values for optionals
@@ -22,16 +26,21 @@ export default function SliderWithIcon({
   defaultValue,
   displayValue = 'auto',
   label,
-  icon,
+  onChange = () => {},
+  icon = undefined,
 }: SliderWithIconProps) {
   const [textSpeed, setTextSpeed] = React.useState<number>(
     parseFloat(localStorage.getItem(persistName) || defaultValue)
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleValueChange = (_event: any, newValue: number | number[]) => {
+  const handleValueChange = (
+    event: React.ChangeEvent<unknown>,
+    newValue: number | number[]
+  ) => {
     setTextSpeed(newValue as number);
     localStorage.setItem(persistName, newValue.toString());
+    // callback that was registered through props
+    onChange(event, newValue);
   };
 
   return (
@@ -40,7 +49,7 @@ export default function SliderWithIcon({
         {label}
       </Typography>
       <Grid container spacing={3}>
-        <Grid item>{icon}</Grid>
+        {icon && <Grid item>{icon}</Grid>}
         <Grid item xs>
           <Slider
             value={textSpeed}

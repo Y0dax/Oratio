@@ -8,18 +8,31 @@ export type VolumeSliderProps = {
   label: string;
   defaultVolume: string;
   valueDisplay: 'on' | 'off' | 'auto';
+  onChange?: (
+    event: React.ChangeEvent<unknown>,
+    newValue: number | number[]
+  ) => void;
 };
 
-export default function VolumeSlider(props: VolumeSliderProps) {
-  const { persistName, label, defaultVolume, valueDisplay } = props;
+export default function VolumeSlider({
+  persistName,
+  label,
+  defaultVolume,
+  valueDisplay,
+  onChange = () => {},
+}: VolumeSliderProps) {
   const [volume, setVolume] = React.useState<number>(
     parseInt(localStorage.getItem(persistName) || defaultVolume, 10)
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleVolumeChange = (_event: any, newValue: number | number[]) => {
+  const handleVolumeChange = (
+    event: React.ChangeEvent<unknown>,
+    newValue: number | number[]
+  ) => {
     setVolume(newValue as number);
     localStorage.setItem(persistName, newValue.toString());
+    // callback that was registered through props
+    onChange(event, newValue);
   };
 
   return (
