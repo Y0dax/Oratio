@@ -6,7 +6,7 @@ import {
   MuiThemeProvider,
 } from '@material-ui/core/styles';
 import { Link } from 'react-router-dom';
-import { Button, Grid } from '@material-ui/core';
+import { Button, Checkbox, FormControlLabel, Grid } from '@material-ui/core';
 import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
 import FormControl from '@material-ui/core/FormControl';
@@ -20,6 +20,7 @@ import {
   VoiceInfo,
 } from "microsoft-cognitiveservices-speech-sdk";
 import * as Theme from './Theme';
+import { green, red } from '@material-ui/core/colors';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -217,6 +218,9 @@ export default function TTSSettings() {
   const [azureVoiceName, setAzureVoiceName] = React.useState(
     localStorage.getItem('azureVoiceName') || ''
   );
+  const [skipEmotes, setSkipEmotes] = React.useState(
+    localStorage.getItem('ttsSkipEmotes') === '1'
+  );
 
   const availableVoices: React.MutableRefObject<VoiceInfo[]> = React.useRef([]);
   useEffect(() => {
@@ -350,6 +354,29 @@ export default function TTSSettings() {
                   ))}
                 </Select>
               </FormControl>
+            </Grid>
+          </Grid>
+          <Grid container direction="row" spacing={3}>
+            <Grid item xs={6}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    style={
+                      skipEmotes ? { color: green[500] } : { color: red[500] }
+                    }
+                    checked={skipEmotes}
+                    onChange={(event) => {
+                      setSkipEmotes(event.currentTarget.checked);
+                      localStorage.setItem(
+                        'ttsSkipEmotes',
+                        event.currentTarget.checked ? '1' : '0'
+                      );
+                    }}
+                  />
+                }
+                label={t('Skip emotes')}
+                labelPlacement="start"
+              />
             </Grid>
           </Grid>
           <Grid

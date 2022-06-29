@@ -28,7 +28,7 @@ import {
 } from 'microsoft-cognitiveservices-speech-sdk';
 import * as tmi from 'tmi.js';
 import * as Theme from './Theme';
-import { lowercaseToEmoteName } from './Emotes';
+import { lowercaseToEmoteName, emoteNameToUrl } from './Emotes';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -535,6 +535,16 @@ async function playTTS(ttsState: React.MutableRefObject<any>, phrase: string) {
     }, TTS_WAIT_WHILE_PLAYING_DELAY_MS);
     return;
   }
+
+  let finalPhrase = phrase;
+  if (ttsState.current.skipEmotes) {
+    const words = phrase.split(' ');
+    finalPhrase = words
+      .filter((word) => {
+        return !(word in emoteNameToUrl);
+      })
+      .join(' ');
+  }
   // TODO check we have all neccessary settings
   const speechConfig = SpeechConfig.fromSubscription(
     ttsState.current.apiKey,
@@ -553,7 +563,7 @@ async function playTTS(ttsState: React.MutableRefObject<any>, phrase: string) {
 
   const synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
   synthesizer.speakTextAsync(
-    phrase,
+    finalPhrase,
     (result) => {
       if (result) {
         ttsState.current.playing = true;
@@ -587,6 +597,7 @@ export default function Home() {
     region: localStorage.getItem('azureRegion') || '',
     voiceLang: localStorage.getItem('azureVoiceLang') || '',
     voiceName: localStorage.getItem('azureVoiceName') || '',
+    skipEmotes: localStorage.getItem('ttsSkipEmotes') === '1',
     playing: false,
   });
   const [ttsActive, setTTSActive] = React.useState(

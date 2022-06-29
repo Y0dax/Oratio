@@ -208,7 +208,6 @@ ipcMain.on('authLoopback', async (event, channelName) => {
   // -> use process.env.TWITCH_CLIENT_ID directly instead
   // eslint-disable-next-line prefer-destructuring
   const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
-  console.log('main loopback:', process.env.TWITCH_CLIENT_ID);
   if (!TWITCH_CLIENT_ID) {
     dialog.showMessageBox({
       message: "Can't authorize! Missing twitch client id!",
