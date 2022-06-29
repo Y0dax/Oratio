@@ -12,15 +12,15 @@ import MenuItem from '@material-ui/core/MenuItem';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
 import TextField from '@material-ui/core/TextField';
+import { green, red } from '@material-ui/core/colors';
 import { useTranslation } from 'react-i18next';
 import {
   SpeechConfig,
   SpeechSynthesizer,
   AudioConfig,
   VoiceInfo,
-} from "microsoft-cognitiveservices-speech-sdk";
+} from 'microsoft-cognitiveservices-speech-sdk';
 import * as Theme from './Theme';
-import { green, red } from '@material-ui/core/colors';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
