@@ -280,7 +280,11 @@ export default function Emotes() {
   const [, updateState] = React.useState<Record<string, never>>();
   const forceUpdate = React.useCallback(() => updateState({}), []);
 
-  const { TWITCH_CLIENT_ID } = process.env;
+  // NOTE: apparently it's not a good idea to use destructuring for process.env
+  // -> use process.env.TWITCH_CLIENT_ID directly instead
+  // eslint-disable-next-line prefer-destructuring
+  const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
+  console.log('EMOTS:', TWITCH_CLIENT_ID);
   // users can only change this by going back to maing settings so only
   // refreshing it here is fine;
   const hasAuth = localStorage.getItem('twitchAuth') === '1';

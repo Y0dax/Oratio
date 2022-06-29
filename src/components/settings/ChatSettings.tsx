@@ -14,7 +14,10 @@ import { red, green } from '@material-ui/core/colors';
 import { useTranslation } from 'react-i18next';
 
 async function handleOpenTwitchAuth(channelName: string, notifyChange: (tokenMissing: boolean) => void) {
-  const { TWITCH_CLIENT_ID } = process.env;
+  // NOTE: apparently it's not a good idea to use destructuring for process.env
+  // -> use process.env.TWITCH_CLIENT_ID directly instead
+  // eslint-disable-next-line prefer-destructuring
+  const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 
   // tell main process to start loopback server and open auth url in default browser
   ipcRenderer.send('authLoopback', channelName);
