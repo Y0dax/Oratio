@@ -2,24 +2,29 @@ import React from 'react';
 
 import { Grid, Slider, Typography } from '@material-ui/core';
 import { VolumeDown, VolumeUp } from '@material-ui/icons';
-import { useTranslation } from 'react-i18next';
 
-export default function VolumeSlider() {
-  const { t } = useTranslation();
+export type VolumeSliderProps = {
+  persistName: string;
+  label: string;
+  defaultVolume: string;
+};
+
+export default function VolumeSlider(props: VolumeSliderProps) {
+  const { persistName, label, defaultVolume } = props;
   const [volume, setVolume] = React.useState<number>(
-    parseInt(localStorage.getItem('volume') || '25', 10)
+    parseInt(localStorage.getItem(persistName) || defaultVolume, 10)
   );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleVolumeChange = (_event: any, newValue: number | number[]) => {
     setVolume(newValue as number);
-    localStorage.setItem('volume', newValue.toString());
+    localStorage.setItem(persistName, newValue.toString());
   };
 
   return (
     <div>
       <Typography id="continuous-slider" gutterBottom>
-        {t('Volume')}
+        {label}
       </Typography>
       <Grid container spacing={3}>
         <Grid item>

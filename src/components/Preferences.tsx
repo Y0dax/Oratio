@@ -71,7 +71,11 @@ export default function Preferences() {
                 <AudioSelector />
               </Grid>
               <Grid item xs={6}>
-                <VolumeSlider />
+                <VolumeSlider
+                  label={t('Volume')}
+                  persistName="volume"
+                  defaultVolume="25"
+                />
               </Grid>
               <Grid item xs={6}>
                 <TextSpeedSlider />
