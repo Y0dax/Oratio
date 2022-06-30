@@ -234,6 +234,7 @@
     "electron-updater": "^4.3.5",
     "express": "^4.17.1",
     "history": "^5.0.0",
+    "hotkeys-js": "^3.9.4",
     "howler": "^2.2.1",
     "i18next": "^20.2.1",
     "microsoft-cognitiveservices-speech-sdk": "^1.22.0",

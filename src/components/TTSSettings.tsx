@@ -21,6 +21,7 @@ import {
   VoiceInfo,
 } from 'microsoft-cognitiveservices-speech-sdk';
 import * as Theme from './Theme';
+import KeybindConfig from './settings/KeybindConfig';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -379,7 +380,13 @@ export default function TTSSettings() {
                 }
                 label={t('Skip emotes')}
                 labelPlacement="start"
+                style={{ marginLeft: '8px' }}
               />
+            </Grid>
+          </Grid>
+          <Grid container direction="row" spacing={3}>
+            <Grid item xs={12}>
+              <KeybindConfig />
             </Grid>
           </Grid>
           <Grid
