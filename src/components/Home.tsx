@@ -31,6 +31,7 @@ import {
   SpeakerAudioDestination,
 } from 'microsoft-cognitiveservices-speech-sdk';
 import hotkeys from 'hotkeys-js';
+import uEmojiParser from 'universal-emoji-parser';
 import * as tmi from 'tmi.js';
 import * as Theme from './Theme';
 import SliderWithIconPersisted from './settings/SliderWithIconPersisted';
@@ -565,6 +566,25 @@ const ssmlProsody = (
   return `<prosody pitch="${pitch}%" rate="${rate}" volume="${volume}">${contents}</prosody>`;
 };
 
+type EmojiObject = {
+  category: string;
+  char: string;
+  fitzpatrick_scale: boolean;
+  keywords: string[];
+};
+
+function replaceEmojiCodes(str: string) {
+  return str.replace(/:([^:\s]*):/g, (code: string) => {
+    const emoji: EmojiObject | undefined =
+      uEmojiParser.getEmojiObjectByCode(code);
+    if (emoji) {
+      return emoji.char;
+    }
+
+    return code;
+  });
+}
+
 const XML_SPECIAL_TO_ESCAPE: { [key: string]: string } = {
   '"': '&quot;',
   "'": '&apos;',
@@ -647,7 +667,7 @@ async function playTTS(
           voiceSettings.voicePitch,
           voiceSettings.voiceRate,
           voiceSettings.voiceVolume,
-          xmlEscape(finalPhrase)
+          xmlEscape(replaceEmojiCodes(finalPhrase))
         )
       )
     )

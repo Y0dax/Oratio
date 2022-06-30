@@ -197,6 +197,7 @@ export default function KeybindConfig() {
               if (watching) {
                 stopWatching.current();
                 setWatching(false);
+                // TODO disallow binding Ctrl+O (which is the global binding to bring up Oratio)?
                 changeBindings({
                   type: 'add',
                   keys: pressedKeys.join('+'),
