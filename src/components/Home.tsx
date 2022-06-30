@@ -624,6 +624,20 @@ const ssmlProsody = (
   return `<prosody pitch="${pitch}%" rate="${rate}" volume="${volume}">${contents}</prosody>`;
 };
 
+const XML_SPECIAL_TO_ESCAPE: { [key: string]: string } = {
+  '"': '&quot;',
+  "'": '&apos;',
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+};
+
+const xmlEscape = (str: string) => {
+  return str.replace(/["'&<>]/g, (c: string) => {
+    return XML_SPECIAL_TO_ESCAPE[c];
+  });
+};
+
 type TTSSettings = {
   apiKey: string;
   region: string;
@@ -692,7 +706,7 @@ async function playTTS(
           voiceSettings.voicePitch,
           voiceSettings.voiceRate,
           voiceSettings.voiceVolume,
-          finalPhrase
+          xmlEscape(finalPhrase)
         )
       )
     )
