@@ -30,6 +30,7 @@ import {
   AudioConfig,
   SpeakerAudioDestination,
 } from 'microsoft-cognitiveservices-speech-sdk';
+import hotkeys from 'hotkeys-js';
 import * as tmi from 'tmi.js';
 import * as Theme from './Theme';
 import SliderWithIconPersisted from './settings/SliderWithIconPersisted';
@@ -712,6 +713,25 @@ export default function Home() {
     // goes to preferences and back which will result in the queued up phrase being
     // played before the other can finish
     ttsPlaying.current = false;
+
+    // set up keybindings
+    const keyBindings: { [keys: string]: string } = JSON.parse(
+      localStorage.getItem('ttsKeybindings') || '{}'
+    );
+    for (const [keys, style] of Object.entries(keyBindings)) {
+      hotkeys(keys, (event, handler) => {
+        setVoiceStyle(style);
+        // prevent default event
+        return false;
+      });
+    }
+
+    // return function that gets run when unmounting to unbind hotkeys
+    return () => {
+      for (const keys of Object.keys(keyBindings)) {
+        hotkeys.unbind(keys);
+      }
+    };
   }, []);
 
   // wrap in a ref so a re-render doesn't delete our history

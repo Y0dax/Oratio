@@ -98,28 +98,6 @@ export default function KeybindConfig() {
   const { t } = useTranslation();
   const classes = useStyles();
 
-  // useEffect(() => {
-  //   const window = remote.BrowserWindow.getFocusedWindow();
-  //   if (window) {
-  //     window.webContents.on(
-  //       'before-input-event',
-  //       (event, input: Electron.Input) => {
-  //         if (input.control) {
-  //           console.log('CTRL');
-  //         }
-  //         if (input.shift) {
-  //           console.log('SHIFT');
-  //         }
-  //         if (input.alt) {
-  //           console.log('ALT');
-  //         }
-  //         console.log('pressing: ', input.key);
-  //       }
-  //     );
-  //   } else {
-  //     console.log('GETTING WINDOW FAIL!');
-  //   }
-  // }, []);
   function reducer(
     state: { [keys: string]: string },
     action: { type: string; keys: string; action: string }
@@ -130,20 +108,22 @@ export default function KeybindConfig() {
         result[action.keys] = action.action;
         break;
       case 'remove':
-        console.log(result);
-        console.log('deleting', action.keys);
         delete result[action.keys];
-        console.log(result);
         break;
       default:
         console.error('Unknwon action');
     }
 
+    localStorage.setItem('ttsKeybindings', JSON.stringify(result));
+
     return result;
   }
 
   const [pressedKeys, setPressedKeys] = useState<string[]>([]);
-  const [keyBindings, changeBindings] = useReducer(reducer, {});
+  const [keyBindings, changeBindings] = useReducer(
+    reducer,
+    JSON.parse(localStorage.getItem('ttsKeybindings') || '{}')
+  );
   const [watching, setWatching] = useState<boolean>(false);
   const stopWatching = useRef(() => {});
   const startWatching = useRef(() => {});
@@ -200,7 +180,7 @@ export default function KeybindConfig() {
 
     // NOTE: IMPORANT! we need to call hotkeys at least once - even without any key binding
     // in order for getPresssedKeyCodes to work
-    hotkeys('', () => {});
+    hotkeys('f10', () => {});
   }, []);
 
   return (
