@@ -146,9 +146,6 @@ export default function Home() {
   const [textSoundMuted, setTextSoundMuted] = React.useState(
     localStorage.getItem('textSoundMuted') === '1'
   );
-  const [voiceStyle, setVoiceStyle] = React.useState(
-    localStorage.getItem('ttsVoiceStyle') || ''
-  );
 
   // these can't change between renders
   const ttsSettingsPermanent: React.MutableRefObject<TTSSettings> = useRef({
@@ -156,36 +153,19 @@ export default function Home() {
     region: localStorage.getItem('azureRegion') || '',
     skipEmotes: localStorage.getItem('ttsSkipEmotes') === '1',
   });
+
+  const [voiceStyle, setVoiceStyle] = React.useState(
+    localStorage.getItem('ttsVoiceStyle') || ''
+  );
+  // these can't change between renders
   const voiceLang = localStorage.getItem('azureVoiceLang') || '';
   const voiceName = localStorage.getItem('azureVoiceName') || '';
 
   const ttsPlaying = useRef(false);
-  // for devenv
-  useEffect(() => {
-    // TODO technichally this can cause problems where a phrase is queued up and the user
-    // goes to preferences and back which will result in the queued up phrase being
-    // played before the other can finish
-    ttsPlaying.current = false;
-
-    // set up keybindings
-    const keyBindings: { [keys: string]: string } = JSON.parse(
-      localStorage.getItem('ttsKeybindings') || '{}'
-    );
-    for (const [keys, style] of Object.entries(keyBindings)) {
-      hotkeys(keys, (event, handler) => {
-        setVoiceStyle(style);
-        // prevent default event
-        return false;
-      });
-    }
-
-    // return function that gets run when unmounting to unbind hotkeys
-    return () => {
-      for (const keys of Object.keys(keyBindings)) {
-        hotkeys.unbind(keys);
-      }
-    };
-  }, []);
+  const channelName = useRef(localStorage.getItem('channelName'));
+  const oAuthToken = useRef(
+    ipcRenderer.sendSync('getTwitchToken', channelName.current)
+  );
 
   // wrap in a ref so a re-render doesn't delete our history
   const textHistory: React.MutableRefObject<string[]> = useRef([]);
@@ -266,14 +246,39 @@ export default function Home() {
     speech.value = '';
   };
 
-  // currently this component only really udpates after the user comes back
-  // from the preferences page so it's fine to have this here for now
-  const channelName = localStorage.getItem('channelName');
-  const oAuthToken = ipcRenderer.sendSync('getTwitchToken', channelName);
-  chat.updateIdentity(channelName, oAuthToken);
-  chat.mirrorFromChat = localStorage.getItem('mirrorFromChat') === '1';
-  chat.mirrorToChat = localStorage.getItem('mirrorToChat') === '1';
-  chat.setOnChatEvent(sendSpeech);
+  useEffect(() => {
+    // currently this component only really udpates after the user comes back
+    // from the preferences page so it's fine to have this here for now
+    chat.updateIdentity(channelName.current, oAuthToken.current);
+    chat.mirrorFromChat = localStorage.getItem('mirrorFromChat') === '1';
+    chat.mirrorToChat = localStorage.getItem('mirrorToChat') === '1';
+    chat.setOnChatEvent(sendSpeech);
+
+    // for devenv
+    // TODO technichally this can cause problems where a phrase is queued up and the user
+    // goes to preferences and back which will result in the queued up phrase being
+    // played before the other can finish
+    ttsPlaying.current = false;
+
+    // set up keybindings
+    const keyBindings: { [keys: string]: string } = JSON.parse(
+      localStorage.getItem('ttsKeybindings') || '{}'
+    );
+    for (const [keys, style] of Object.entries(keyBindings)) {
+      hotkeys(keys, (event, handler) => {
+        setVoiceStyle(style);
+        // prevent default event
+        return false;
+      });
+    }
+
+    // return function that gets run when unmounting to unbind hotkeys
+    return () => {
+      for (const keys of Object.keys(keyBindings)) {
+        hotkeys.unbind(keys);
+      }
+    };
+  }, []);
 
   // Tab-complete
   let tabCompleteStart = 0;
@@ -511,8 +516,8 @@ export default function Home() {
           {(chat.mirrorFromChat || chat.mirrorToChat) && (
             <ChatStatus
               chatInstance={chat}
-              channelName={channelName}
-              oAuthToken={oAuthToken}
+              channelName={channelName.current}
+              oAuthToken={oAuthToken.current}
             />
           )}
           <div>
