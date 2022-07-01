@@ -4,9 +4,8 @@ import { Grid, Slider, Typography } from '@material-ui/core';
 import { VolumeDown, VolumeUp } from '@material-ui/icons';
 
 export type VolumeSliderProps = {
-  persistName: string;
+  value: number;
   label: string;
-  defaultVolume: string;
   valueDisplay: 'on' | 'off' | 'auto';
   onChange?: (
     event: React.ChangeEvent<unknown>,
@@ -15,26 +14,11 @@ export type VolumeSliderProps = {
 };
 
 export default function VolumeSlider({
-  persistName,
+  value,
   label,
-  defaultVolume,
   valueDisplay,
-  onChange = () => {},
+  onChange = undefined,
 }: VolumeSliderProps) {
-  const [volume, setVolume] = React.useState<number>(
-    parseInt(localStorage.getItem(persistName) || defaultVolume, 10)
-  );
-
-  const handleVolumeChange = (
-    event: React.ChangeEvent<unknown>,
-    newValue: number | number[]
-  ) => {
-    setVolume(newValue as number);
-    localStorage.setItem(persistName, newValue.toString());
-    // callback that was registered through props
-    onChange(event, newValue);
-  };
-
   return (
     <div>
       <Typography id="continuous-slider" gutterBottom>
@@ -46,8 +30,8 @@ export default function VolumeSlider({
         </Grid>
         <Grid item xs>
           <Slider
-            value={volume}
-            onChange={handleVolumeChange}
+            value={value}
+            onChange={onChange}
             aria-labelledby="continuous-slider"
             valueLabelDisplay={valueDisplay}
           />

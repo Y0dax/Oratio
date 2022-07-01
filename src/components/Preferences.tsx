@@ -56,9 +56,24 @@ const useStyles = makeStyles(() =>
   })
 );
 
+const localStorageVolumeName = 'volume';
+
 export default function Preferences() {
   const classes = useStyles();
   const { t } = useTranslation();
+
+  const [volume, setVolume] = React.useState<number>(
+    parseInt(localStorage.getItem(localStorageVolumeName) || '25', 10)
+  );
+
+  const handleVolumeChange = (
+    event: React.ChangeEvent<unknown>,
+    newValue: number | number[]
+  ) => {
+    setVolume(newValue as number);
+    localStorage.setItem(localStorageVolumeName, newValue.toString());
+  };
+
   return (
     <MuiThemeProvider theme={theme}>
       <div className={classes.root}>
@@ -74,8 +89,8 @@ export default function Preferences() {
               <Grid item xs={6}>
                 <VolumeSlider
                   label={t('Volume')}
-                  persistName="volume"
-                  defaultVolume="25"
+                  value={volume}
+                  onChange={handleVolumeChange}
                   valueDisplay="on"
                 />
               </Grid>
