@@ -16,7 +16,13 @@ import WavesIcon from '@material-ui/icons/Waves';
 import SpeedIcon from '@material-ui/icons/Speed';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
-import { FormControl, InputLabel, Select } from '@material-ui/core';
+import {
+  FormControl,
+  IconButton,
+  InputLabel,
+  Select,
+  Menu,
+} from '@material-ui/core';
 import MUIMenuItem from '@material-ui/core/MenuItem';
 import { red, green } from '@material-ui/core/colors';
 import { BrowserWindow, remote, ipcRenderer, MenuItem } from 'electron';
@@ -24,13 +30,14 @@ import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
 import hotkeys from 'hotkeys-js';
 import * as Theme from './Theme';
-import SliderWithIconPersisted from './settings/SliderWithIconPersisted';
+import SliderWithIcon from './settings/SliderWithIcon';
 import { lowercaseToEmoteName, emoteNameToUrl } from './Emotes';
 import VolumeSlider from './settings/VolumeSlider';
 import { voiceStyles } from './settings/KeybindConfig';
 import ChatStatus from './ChatStatus';
 import ChatInteraction from '../TwitchChat';
 import { TTSSettings, playTTS } from '../TTSAzure';
+import VoiceConfigBar, { VoiceConfig } from './VoiceConfigBar';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -57,7 +64,7 @@ const useStyles = makeStyles(() =>
       textDecoration: 'none',
     },
     icon: {
-      fontSize: '10rem',
+      fontSize: '8rem',
       // boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
     },
     header: {
@@ -117,6 +124,11 @@ async function handleOpenObs() {
   }
 }
 
+const localStorageVoiceStyle = 'ttsVoiceStyle';
+const localStorageVoiceVolume = 'ttsVoiceVolume';
+const localStorageVoicePitch = 'ttsVoicePitch';
+const localStorageVoiceRate = 'ttsVoiceRate';
+
 const chat: ChatInteraction = new ChatInteraction(
   localStorage.getItem('channelName'),
   null,
@@ -155,11 +167,37 @@ export default function Home() {
   });
 
   const [voiceStyle, setVoiceStyle] = React.useState(
-    localStorage.getItem('ttsVoiceStyle') || ''
+    localStorage.getItem(localStorageVoiceStyle) || ''
   );
+  const [voiceVolume, setVoiceVolume] = React.useState(
+    parseInt(localStorage.getItem(localStorageVoiceVolume) || '100', 10)
+  );
+  const [voicePitch, setVoicePitch] = React.useState(
+    parseFloat(localStorage.getItem(localStorageVoicePitch) || '0')
+  );
+  const [voiceRate, setVoiceRate] = React.useState(
+    parseFloat(localStorage.getItem(localStorageVoiceRate) || '1')
+  );
+
   // these can't change between renders
   const voiceLang = localStorage.getItem('azureVoiceLang') || '';
   const voiceName = localStorage.getItem('azureVoiceName') || '';
+
+  function getCurrentSettings(): VoiceConfig {
+    return {
+      style: voiceStyle,
+      volume: voiceVolume,
+      pitch: voicePitch,
+      rate: voiceRate,
+    };
+  }
+
+  function handleConfigLoad(name: string, value: VoiceConfig) {
+    setVoiceStyle(value.style);
+    setVoiceVolume(value.volume);
+    setVoicePitch(value.pitch);
+    setVoiceRate(value.rate);
+  }
 
   const ttsPlaying = useRef(false);
   const channelName = useRef(localStorage.getItem('channelName'));
@@ -220,15 +258,10 @@ export default function Home() {
         {
           voiceLang,
           voiceName,
-          // TODO: @Performance
-          voicePitch: parseFloat(localStorage.getItem('ttsVoicePitch') || '1'),
-          voiceRate: parseFloat(localStorage.getItem('ttsVoiceRate') || '1'),
-          voiceVolume: parseInt(
-            localStorage.getItem('ttsVoiceVolume') || '100',
-            10
-          ),
-
           voiceStyle,
+          voiceVolume,
+          voicePitch,
+          voiceRate,
         },
         ttsPlaying,
         phrase
@@ -440,13 +473,18 @@ export default function Home() {
               </Grid>
             </Grid>
             {ttsActive && (
+              // TODO extract this into its own component
               <>
                 <Grid container direction="row" spacing={3}>
-                  <Grid item xs={12}>
+                  <Grid item xs={5} container alignItems="center">
                     <Typography variant="h5" component="h1">
                       {t('TTS Settings')}
                     </Typography>
                   </Grid>
+                  <VoiceConfigBar
+                    getCurrentSettings={getCurrentSettings}
+                    configLoadCallback={handleConfigLoad}
+                  />
                 </Grid>
                 <Grid container direction="row" spacing={3}>
                   <Grid item xs={6}>
@@ -479,33 +517,51 @@ export default function Home() {
                   </Grid>
                   <Grid item xs={6}>
                     <VolumeSlider
-                      persistName="ttsVoiceVolume"
-                      defaultVolume="100"
+                      value={voiceVolume}
                       label={t('Volume')}
                       valueDisplay="auto"
+                      onChange={(event, value) => {
+                        setVoiceVolume(value as number);
+                        localStorage.setItem(
+                          localStorageVoiceVolume,
+                          value.toString()
+                        );
+                      }}
                     />
                   </Grid>
                 </Grid>
                 <Grid container direction="row" spacing={3}>
                   <Grid item xs={6}>
-                    <SliderWithIconPersisted
-                      persistName="ttsVoicePitch"
+                    <SliderWithIcon
+                      value={voicePitch}
                       label={t('Pitch (+/- in %)')}
-                      defaultValue="0"
                       min={-100}
                       max={100}
                       step={1}
+                      onChange={(event, value) => {
+                        setVoicePitch(value as number);
+                        localStorage.setItem(
+                          localStorageVoicePitch,
+                          value.toString()
+                        );
+                      }}
                       icon={<WavesIcon />}
                     />
                   </Grid>
                   <Grid item xs={6}>
-                    <SliderWithIconPersisted
-                      persistName="ttsVoiceRate"
+                    <SliderWithIcon
+                      value={voiceRate}
                       label={t('Rate')}
-                      defaultValue="1"
                       min={0}
                       max={3}
                       step={0.01}
+                      onChange={(event, value) => {
+                        setVoiceRate(value as number);
+                        localStorage.setItem(
+                          localStorageVoiceRate,
+                          value.toString()
+                        );
+                      }}
                       icon={<SpeedIcon />}
                     />
                   </Grid>
