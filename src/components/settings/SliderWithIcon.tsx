@@ -4,11 +4,10 @@ import { Grid, Slider, Typography } from '@material-ui/core';
 import { SvgIconProps } from '@material-ui/core/SvgIcon';
 
 export type SliderWithIconProps = {
-  persistName: string;
+  value: number;
   min?: number;
   max?: number;
   step?: number;
-  defaultValue: string;
   displayValue?: 'on' | 'off' | 'auto';
   label: string;
   onChange?: (
@@ -19,30 +18,15 @@ export type SliderWithIconProps = {
 };
 export default function SliderWithIcon({
   // de-structure props object here so we can provide default values for optionals
-  persistName,
+  value,
   min = 0,
   max = 100,
   step = 1,
-  defaultValue,
   displayValue = 'auto',
   label,
-  onChange = () => {},
+  onChange = undefined,
   icon = undefined,
 }: SliderWithIconProps) {
-  const [textSpeed, setTextSpeed] = React.useState<number>(
-    parseFloat(localStorage.getItem(persistName) || defaultValue)
-  );
-
-  const handleValueChange = (
-    event: React.ChangeEvent<unknown>,
-    newValue: number | number[]
-  ) => {
-    setTextSpeed(newValue as number);
-    localStorage.setItem(persistName, newValue.toString());
-    // callback that was registered through props
-    onChange(event, newValue);
-  };
-
   return (
     <div>
       <Typography id="continuous-slider" gutterBottom>
@@ -52,8 +36,8 @@ export default function SliderWithIcon({
         {icon && <Grid item>{icon}</Grid>}
         <Grid item xs>
           <Slider
-            value={textSpeed}
-            onChange={handleValueChange}
+            value={value}
+            onChange={onChange}
             aria-labelledby="continuous-slider"
             valueLabelDisplay={displayValue}
             step={step}

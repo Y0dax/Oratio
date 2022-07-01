@@ -16,7 +16,7 @@ import * as Theme from './Theme';
 import FontColorPicker from './settings/FontColorPicker';
 import FontBoldSlider from './settings/FontBoldSlider';
 import AudioSelector from './settings/AudioSelector';
-import SliderWithIconPersisted from './settings/SliderWithIconPersisted';
+import SliderWithIcon from './settings/SliderWithIcon';
 import VolumeSlider from './settings/VolumeSlider';
 import BubbleBackgroundColorPicker from './settings/BubbleBackgroundColorSlider';
 import LanguageSelector from './settings/LanguageSelector';
@@ -57,6 +57,8 @@ const useStyles = makeStyles(() =>
 );
 
 const localStorageVolumeName = 'volume';
+const localStorageTextSpeed = 'textSpeed';
+const localStorageFontSize = 'fontSize';
 
 export default function Preferences() {
   const classes = useStyles();
@@ -72,6 +74,30 @@ export default function Preferences() {
   ) => {
     setVolume(newValue as number);
     localStorage.setItem(localStorageVolumeName, newValue.toString());
+  };
+
+  const [textSpeed, setTextSpeed] = React.useState<number>(
+    parseFloat(localStorage.getItem(localStorageTextSpeed) || '75')
+  );
+
+  const handleTextSpeedChange = (
+    event: React.ChangeEvent<unknown>,
+    newValue: number | number[]
+  ) => {
+    setTextSpeed(newValue as number);
+    localStorage.setItem(localStorageTextSpeed, newValue.toString());
+  };
+
+  const [textSize, setTextSize] = React.useState<number>(
+    parseFloat(localStorage.getItem(localStorageFontSize) || '48')
+  );
+
+  const handelFontSizeChange = (
+    event: React.ChangeEvent<unknown>,
+    newValue: number | number[]
+  ) => {
+    setTextSize(newValue as number);
+    localStorage.setItem(localStorageFontSize, newValue.toString());
   };
 
   return (
@@ -95,21 +121,22 @@ export default function Preferences() {
                 />
               </Grid>
               <Grid item xs={6}>
-                <SliderWithIconPersisted
-                  persistName="textSpeed"
+                <SliderWithIcon
+                  value={textSpeed}
                   defaultValue="75"
                   label={t('Text Speed')}
                   displayValue="on"
+                  onChange={handleTextSpeedChange}
                   icon={<SpeedIcon />}
                 />
               </Grid>
               <Grid item xs={6}>
-                <SliderWithIconPersisted
-                  persistName="fontSize"
-                  defaultValue="48"
+                <SliderWithIcon
+                  value={textSize}
                   label={t('Text Size')}
                   displayValue="on"
                   max={200}
+                  onChange={handelFontSizeChange}
                   icon={<FormatSizeIcon />}
                 />
               </Grid>
