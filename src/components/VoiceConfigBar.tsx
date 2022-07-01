@@ -1,17 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { IconButton, Menu, MenuItem } from '@material-ui/core';
+import { IconButton, Menu, MenuItem, Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import Popover from '@material-ui/core/Popover';
 import TextField from '@material-ui/core/TextField';
 import SaveIcon from '@material-ui/icons/Save';
 import FolderIcon from '@material-ui/icons/Folder';
 import DeleteIcon from '@material-ui/icons/Delete';
-import { red } from '@material-ui/core/colors';
+import { red, green } from '@material-ui/core/colors';
 import { useTranslation } from 'react-i18next';
 import hotkeys from 'hotkeys-js';
 
 const useStyles = makeStyles((theme) => ({
   saveName: {
+    margin: theme.spacing(1),
+  },
+  popSaveButton: {
     margin: theme.spacing(1),
   },
 }));
@@ -99,7 +102,7 @@ export default function VoiceConfigBar(props: {
       });
     }
 
-    hotkeys.filter = function(event) {
+    hotkeys.filter = function (event) {
       // const tag = event.target.tagName;
       // hotkeys.setScope(
       //   /^(INPUT|TEXTAREA|SELECT)$/.test(tag) ? 'input' : 'other'
@@ -190,7 +193,12 @@ export default function VoiceConfigBar(props: {
             setSaveConfigName(trimmed);
           }}
         />
-        <IconButton
+        <Button
+          variant="contained"
+          size="small"
+          style={{ backgroundColor: green[500], color: '#fff' }}
+          className={classes.popSaveButton}
+          startIcon={<SaveIcon />}
           aria-label="save"
           onClick={() => {
             const currentValues = props.getCurrentSettings();
@@ -209,12 +217,11 @@ export default function VoiceConfigBar(props: {
             localStorage.setItem(storageCurrentConfigName, saveConfigName);
           }}
         >
-          <SaveIcon />
-        </IconButton>
-        {t('Save as')}
+          {t('Save as')}
+        </Button>
       </Popover>
       <IconButton
-        aria-label="save"
+        aria-label="delete"
         onClick={() => {
           const filtered = { ...voiceConfigs };
           delete filtered[saveConfigName];
