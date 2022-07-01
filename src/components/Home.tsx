@@ -28,15 +28,13 @@ import { red, green } from '@material-ui/core/colors';
 import { BrowserWindow, remote, ipcRenderer, MenuItem } from 'electron';
 import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
-import hotkeys from 'hotkeys-js';
 import * as Theme from './Theme';
 import SliderWithIcon from './settings/SliderWithIcon';
 import { lowercaseToEmoteName, emoteNameToUrl } from './Emotes';
 import VolumeSlider from './settings/VolumeSlider';
-import { voiceStyles } from './settings/KeybindConfig';
 import ChatStatus from './ChatStatus';
 import ChatInteraction from '../TwitchChat';
-import { TTSSettings, playTTS } from '../TTSAzure';
+import { TTSSettings, playTTS, voiceStyles } from '../TTSAzure';
 import VoiceConfigBar, { VoiceConfig } from './VoiceConfigBar';
 
 const theme = Theme.default();
@@ -292,25 +290,6 @@ export default function Home() {
     // goes to preferences and back which will result in the queued up phrase being
     // played before the other can finish
     ttsPlaying.current = false;
-
-    // set up keybindings
-    const keyBindings: { [keys: string]: string } = JSON.parse(
-      localStorage.getItem('ttsKeybindings') || '{}'
-    );
-    for (const [keys, style] of Object.entries(keyBindings)) {
-      hotkeys(keys, (event, handler) => {
-        setVoiceStyle(style);
-        // prevent default event
-        return false;
-      });
-    }
-
-    // return function that gets run when unmounting to unbind hotkeys
-    return () => {
-      for (const keys of Object.keys(keyBindings)) {
-        hotkeys.unbind(keys);
-      }
-    };
   }, []);
 
   // Tab-complete
@@ -476,15 +455,23 @@ export default function Home() {
               // TODO extract this into its own component
               <>
                 <Grid container direction="row" spacing={3}>
-                  <Grid item xs={5} container alignItems="center">
+                  <Grid item xs={6} container alignItems="center">
                     <Typography variant="h5" component="h1">
                       {t('TTS Settings')}
                     </Typography>
                   </Grid>
-                  <VoiceConfigBar
-                    getCurrentSettings={getCurrentSettings}
-                    configLoadCallback={handleConfigLoad}
-                  />
+                  <Grid
+                    item
+                    xs={6}
+                    container
+                    alignItems="center"
+                    justifyContent="flex-end"
+                  >
+                    <VoiceConfigBar
+                      getCurrentSettings={getCurrentSettings}
+                      configLoadCallback={handleConfigLoad}
+                    />
+                  </Grid>
                 </Grid>
                 <Grid container direction="row" spacing={3}>
                   <Grid item xs={6}>
