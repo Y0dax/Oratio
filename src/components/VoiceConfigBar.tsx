@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IconButton, Menu, MenuItem } from '@material-ui/core';
-import Grid from '@material-ui/core/Grid';
 import { makeStyles } from '@material-ui/core/styles';
 import Popover from '@material-ui/core/Popover';
 import TextField from '@material-ui/core/TextField';
 import SaveIcon from '@material-ui/icons/Save';
 import FolderIcon from '@material-ui/icons/Folder';
 import DeleteIcon from '@material-ui/icons/Delete';
-import { red, green } from '@material-ui/core/colors';
+import { red } from '@material-ui/core/colors';
 import { useTranslation } from 'react-i18next';
 import hotkeys from 'hotkeys-js';
 
@@ -61,11 +60,9 @@ export default function VoiceConfigBar(props: {
   useEffect(() => {
     function handleConfigLoad(name: string) {
       const newConfig = voiceConfigs[name];
-      console.log(voiceConfigs);
       if (newConfig) {
         props.configLoadCallback(name, newConfig);
         // set config name in save config menu, otherwise it might be confusing
-        console.log('LOAD', name);
         setSaveConfigName(name);
       } else {
         console.error('Config not found:', name);
@@ -98,10 +95,18 @@ export default function VoiceConfigBar(props: {
     for (const [keys, configName] of Object.entries(keyBindings)) {
       hotkeys(keys, (event, handler) => {
         handleConfigLoadRef.current(configName);
-        // prevent default event
-        return false;
+        // don't prevent default event, since we allow hotkeys inside input fields now
       });
     }
+
+    hotkeys.filter = function(event) {
+      // const tag = event.target.tagName;
+      // hotkeys.setScope(
+      //   /^(INPUT|TEXTAREA|SELECT)$/.test(tag) ? 'input' : 'other'
+      // );
+      // allow hotkeys everywhere
+      return true;
+    };
 
     // return function that gets run when unmounting to unbind hotkeys
     return () => {
@@ -188,7 +193,6 @@ export default function VoiceConfigBar(props: {
         <IconButton
           aria-label="save"
           onClick={() => {
-            console.log('SAVE AS', saveConfigName);
             const currentValues = props.getCurrentSettings();
             const newConfigs = {
               ...voiceConfigs,
