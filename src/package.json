@@ -1,6 +1,6 @@
 {
   "name": "oratio-electron",
-  "version": "0.2.6",
+  "version": "0.3.3",
   "productName": "Oratio",
   "description": "An electron application to display text input in a window for OBS capture",
   "main": "./main.prod.js",
@@ -14,6 +14,8 @@
     "postinstall": "yarn electron-rebuild"
   },
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "keytar": "7.6"
+  },
   "devDependencies": {}
 }

@@ -9,15 +9,18 @@ import { Button, Grid } from '@material-ui/core';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import InsertEmoticonIcon from '@material-ui/icons/InsertEmoticon';
+import RecordVoiceOverIcon from '@material-ui/icons/RecordVoiceOver';
+import SpeedIcon from '@material-ui/icons/Speed';
+import FormatSizeIcon from '@material-ui/icons/FormatSize';
 import * as Theme from './Theme';
-import FontSizeSlider from './settings/FontSizeSlider';
 import FontColorPicker from './settings/FontColorPicker';
 import FontBoldSlider from './settings/FontBoldSlider';
 import AudioSelector from './settings/AudioSelector';
-import TextSpeedSlider from './settings/TextSpeedSlider';
+import SliderWithIcon from './settings/SliderWithIcon';
 import VolumeSlider from './settings/VolumeSlider';
 import BubbleBackgroundColorPicker from './settings/BubbleBackgroundColorSlider';
 import LanguageSelector from './settings/LanguageSelector';
+import ChatSettings from './settings/ChatSettings';
 
 const theme = Theme.default();
 const useStyles = makeStyles(() =>
@@ -53,26 +56,89 @@ const useStyles = makeStyles(() =>
   })
 );
 
+const localStorageVolumeName = 'volume';
+const localStorageTextSpeed = 'textSpeed';
+const localStorageFontSize = 'fontSize';
+
 export default function Preferences() {
   const classes = useStyles();
   const { t } = useTranslation();
+
+  const [volume, setVolume] = React.useState<number>(
+    parseInt(localStorage.getItem(localStorageVolumeName) || '25', 10)
+  );
+
+  const handleVolumeChange = (
+    event: React.ChangeEvent<unknown>,
+    newValue: number | number[]
+  ) => {
+    setVolume(newValue as number);
+    localStorage.setItem(localStorageVolumeName, newValue.toString());
+  };
+
+  const [textSpeed, setTextSpeed] = React.useState<number>(
+    parseFloat(localStorage.getItem(localStorageTextSpeed) || '75')
+  );
+
+  const handleTextSpeedChange = (
+    event: React.ChangeEvent<unknown>,
+    newValue: number | number[]
+  ) => {
+    setTextSpeed(newValue as number);
+    localStorage.setItem(localStorageTextSpeed, newValue.toString());
+  };
+
+  const [textSize, setTextSize] = React.useState<number>(
+    parseFloat(localStorage.getItem(localStorageFontSize) || '48')
+  );
+
+  const handelFontSizeChange = (
+    event: React.ChangeEvent<unknown>,
+    newValue: number | number[]
+  ) => {
+    setTextSize(newValue as number);
+    localStorage.setItem(localStorageFontSize, newValue.toString());
+  };
+
   return (
     <MuiThemeProvider theme={theme}>
       <div className={classes.root}>
         <div className={classes.content}>
           <form noValidate autoComplete="off">
             <Grid container direction="row" spacing={3}>
+              <Grid item xs={12}>
+                <ChatSettings />
+              </Grid>
               <Grid item xs={6}>
                 <AudioSelector />
               </Grid>
               <Grid item xs={6}>
-                <VolumeSlider />
+                <VolumeSlider
+                  label={t('Volume')}
+                  value={volume}
+                  onChange={handleVolumeChange}
+                  valueDisplay="on"
+                />
               </Grid>
               <Grid item xs={6}>
-                <TextSpeedSlider />
+                <SliderWithIcon
+                  value={textSpeed}
+                  defaultValue="75"
+                  label={t('Text Speed')}
+                  displayValue="on"
+                  onChange={handleTextSpeedChange}
+                  icon={<SpeedIcon />}
+                />
               </Grid>
               <Grid item xs={6}>
-                <FontSizeSlider />
+                <SliderWithIcon
+                  value={textSize}
+                  label={t('Text Size')}
+                  displayValue="on"
+                  max={200}
+                  onChange={handelFontSizeChange}
+                  icon={<FormatSizeIcon />}
+                />
               </Grid>
               <Grid item xs={6}>
                 <FontBoldSlider />
@@ -83,13 +149,26 @@ export default function Preferences() {
               <Grid item xs={12}>
                 <Link to="/emotes" className={classes.link}>
                   <Button
-                    id="open-preferences"
+                    id="open-preferences-emotes"
                     variant="contained"
                     className={classes.button}
                     color="primary"
                   >
                     <InsertEmoticonIcon className={classes.emoteIcon} />
                     {t('Manage Emotes')}
+                  </Button>
+                </Link>
+              </Grid>
+              <Grid item xs={12}>
+                <Link to="/tts" className={classes.link}>
+                  <Button
+                    id="open-preferences-tts"
+                    variant="contained"
+                    className={classes.button}
+                    color="primary"
+                  >
+                    <RecordVoiceOverIcon className={classes.emoteIcon} />
+                    {t('Text To Speech Settings')}
                   </Button>
                 </Link>
               </Grid>

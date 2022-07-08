@@ -2,24 +2,27 @@ import React from 'react';
 
 import { Grid, Slider, Typography } from '@material-ui/core';
 import { VolumeDown, VolumeUp } from '@material-ui/icons';
-import { useTranslation } from 'react-i18next';
 
-export default function VolumeSlider() {
-  const { t } = useTranslation();
-  const [volume, setVolume] = React.useState<number>(
-    parseInt(localStorage.getItem('volume') || '25', 10)
-  );
+export type VolumeSliderProps = {
+  value: number;
+  label: string;
+  valueDisplay: 'on' | 'off' | 'auto';
+  onChange?: (
+    event: React.ChangeEvent<unknown>,
+    newValue: number | number[]
+  ) => void;
+};
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleVolumeChange = (_event: any, newValue: number | number[]) => {
-    setVolume(newValue as number);
-    localStorage.setItem('volume', newValue.toString());
-  };
-
+export default function VolumeSlider({
+  value,
+  label,
+  valueDisplay,
+  onChange = undefined,
+}: VolumeSliderProps) {
   return (
     <div>
       <Typography id="continuous-slider" gutterBottom>
-        {t('Volume')}
+        {label}
       </Typography>
       <Grid container spacing={3}>
         <Grid item>
@@ -27,10 +30,10 @@ export default function VolumeSlider() {
         </Grid>
         <Grid item xs>
           <Slider
-            value={volume}
-            onChange={handleVolumeChange}
+            value={value}
+            onChange={onChange}
             aria-labelledby="continuous-slider"
-            valueLabelDisplay="on"
+            valueLabelDisplay={valueDisplay}
           />
         </Grid>
         <Grid item>

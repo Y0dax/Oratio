@@ -40,6 +40,7 @@ src/renderer.prod.js
 src/renderer.prod.js.map
 src/style.css
 src/style.css.map
+src/index_injected.html
 dist
 dll
 main.js

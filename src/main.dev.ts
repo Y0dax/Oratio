@@ -11,11 +11,20 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, shell, globalShortcut } from 'electron';
+import child_process from 'child_process';
+import {
+  app,
+  BrowserWindow,
+  shell,
+  globalShortcut,
+  ipcMain,
+  dialog,
+} from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
+import keytar from 'keytar';
 import MenuBuilder from './menu';
-import server from './server/server';
+import TwitchAuth from './TwitchAuth';
 
 export default class AppUpdater {
   constructor() {
@@ -28,6 +37,7 @@ export default class AppUpdater {
 // app.commandLine.appendSwitch('disable-gpu-compositing');
 // app.commandLine.appendSwitch('disable-gpu');
 let mainWindow: BrowserWindow | null = null;
+const isDevEnv = process.env.NODE_ENV === 'development';
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -55,10 +65,7 @@ const installExtensions = async () => {
 };
 
 const createWindow = async () => {
-  if (
-    process.env.NODE_ENV === 'development' ||
-    process.env.DEBUG_PROD === 'true'
-  ) {
+  if (isDevEnv || process.env.DEBUG_PROD === 'true') {
     await installExtensions();
   }
 
@@ -83,7 +90,15 @@ const createWindow = async () => {
     },
   });
 
-  mainWindow.loadURL(`file://${__dirname}/index.html#/home`);
+  if (isDevEnv) {
+    mainWindow.loadURL(
+      `http://localhost:${
+        process.env.PORT || '1212'
+      }/dist/index_injected.html#/home`
+    );
+  } else {
+    mainWindow.loadURL(`file://${__dirname}/index_injected.html#/home`);
+  }
 
   /**
    * Add event listeners...
@@ -109,7 +124,6 @@ const createWindow = async () => {
       app.quit();
     }
     globalShortcut.unregisterAll();
-    server.close();
   });
 
   const menuBuilder = new MenuBuilder(mainWindow);
@@ -133,7 +147,6 @@ app.on('window-all-closed', () => {
     app.quit();
   }
   globalShortcut.unregisterAll();
-  server.close();
 });
 
 app
@@ -154,9 +167,31 @@ app
       }
     });
 
-    server.listen(4563, () => {
-      console.log(`Server running on http://localhost:4563`);
-    });
+    const ASSETS_PATH = app.isPackaged
+      ? path.join(process.resourcesPath, 'assets')
+      : path.join(__dirname, '../assets');
+
+    // start our server in a separate process to keep main/server performance indipendent
+    // NOTE: using child_process over hidden renderer/webworker since we don't need
+    // access to electron on the server and a forked process might be more lightweight?
+    // while a webworker might not be able to handle/use? all the things we need
+    //
+    // will close automatically when this process exits
+    const serverProc = child_process.fork(`${ASSETS_PATH}/dist/server.js`);
+    if (serverProc !== null) {
+      if (serverProc.stdout !== null) {
+        serverProc.stdout.on('data', (data) => {
+          console.log(`server stdout:\n${data}`);
+        });
+      }
+      if (serverProc.stderr !== null) {
+        serverProc.stderr.on('data', (data) => {
+          console.log(`server stderr:\n${data}`);
+        });
+      }
+
+      serverProc.send({ action: 'listen', port: 4563 });
+    }
 
     return mainWindow;
   })
@@ -166,4 +201,50 @@ app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) createWindow();
+});
+
+ipcMain.on('authLoopback', async (event, channelName) => {
+  // NOTE: apparently it's not a good idea to use destructuring for process.env
+  // -> use process.env.TWITCH_CLIENT_ID directly instead
+  // eslint-disable-next-line prefer-destructuring
+  const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
+  if (!TWITCH_CLIENT_ID) {
+    dialog.showMessageBox({
+      message: "Can't authorize! Missing twitch client id!",
+    });
+    return;
+  }
+
+  const validPorts = [8005, 8006, 8007, 8008, 8009, 8010];
+  const twitch = new TwitchAuth(validPorts, TWITCH_CLIENT_ID);
+  twitch.on('allPortsInUse', () => {
+    dialog.showMessageBox({
+      message: `All ports (${validPorts}) in use!`,
+    });
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  twitch.on('receivedToken', (accessToken: string, _tokenType: string) => {
+    keytar.setPassword('Oratio-Twitch', channelName, accessToken);
+    event.reply('receivedToken');
+    twitch.shutDown();
+  });
+  await twitch.setUpLoopback();
+});
+
+// TODO: how long does getPassword usually take? should we use this as async?
+ipcMain.on('getTwitchToken', async (event, channelName: string) => {
+  if (!channelName || channelName.length === 0) {
+    event.returnValue = null;
+  } else {
+    event.returnValue = await keytar.getPassword('Oratio-Twitch', channelName);
+  }
+});
+
+ipcMain.on('getAzureKey', async (event) => {
+  event.returnValue = await keytar.getPassword('Oratio-Azure', 'main');
+});
+
+ipcMain.on('setAzureKey', async (_event, key: string) => {
+  keytar.setPassword('Oratio-Azure', 'main', key);
 });

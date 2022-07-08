@@ -1,40 +1,8 @@
-/*
-object-assign
-(c) Sindre Sorhus
-@license MIT
-*/
-
-/*!
- *  Spatial Plugin - Adds support for stereo and 3D audio where Web Audio is supported.
- *  
- *  howler.js v2.2.3
- *  howlerjs.com
- *
- *  (c) 2013-2020, James Simpson of GoldFire Studios
- *  goldfirestudios.com
- *
- *  MIT License
- */
-
-/*!
- *  howler.js v2.2.3
- *  howlerjs.com
- *
- *  (c) 2013-2020, James Simpson of GoldFire Studios
- *  goldfirestudios.com
- *
- *  MIT License
- */
-
 /*!
  * accepts
  * Copyright(c) 2014 Jonathan Ong
  * Copyright(c) 2015 Douglas Christopher Wilson
  * MIT Licensed
- */
-
-/*!
- * base64id v0.1.0
  */
 
 /*!
@@ -296,70 +264,3 @@ object-assign
  */
 
 /*! http://mths.be/fromcodepoint v0.1.0 by @mathias */
-
-/*! https://mths.be/utf8js v2.1.2 by @mathias */
-
-/**
- * @file Embedded JavaScript templating engine. {@link http://ejs.co}
- * @author Matthew Eernisse <mde@fleegix.org>
- * @author Tiancheng "Timothy" Gu <timothygu99@gmail.com>
- * @project EJS
- * @license {@link http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0}
- */
-
-/**
- * A better abstraction over CSS.
- *
- * @copyright Oleg Isonen (Slobodskoi) / Isonen 2014-present
- * @website https://github.com/cssinjs/jss
- * @license MIT
- */
-
-/**
- * Wrapper for built-in http.js to emulate the browser XMLHttpRequest object.
- *
- * This can be used with JS designed for browsers to improve reuse of code and
- * allow the use of existing libraries.
- *
- * Usage: include("XMLHttpRequest.js") and use XMLHttpRequest per W3C specs.
- *
- * @author Dan DeFelippi <dan@driverdan.com>
- * @contributor David Ellis <d.f.ellis@ieee.org>
- * @license MIT
- */
-
-/** @license React v0.20.2
- * scheduler.production.min.js
- *
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-/** @license React v17.0.2
- * react-dom-server.node.production.min.js
- *
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-/** @license React v17.0.2
- * react-dom.production.min.js
- *
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-/** @license React v17.0.2
- * react.production.min.js
- *
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */

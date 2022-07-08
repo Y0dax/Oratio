@@ -4,8 +4,10 @@ import webpack from 'webpack';
 import chalk from 'chalk';
 import { merge } from 'webpack-merge';
 import { spawn, execSync } from 'child_process';
-import baseConfig from './webpack.config.base';
+import baseConfig, { getCSP } from './webpack.config.base';
+import webpackPaths from './webpack.paths';
 import CheckNodeEnv from '../scripts/CheckNodeEnv';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
 import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
 
 // When an ESLint server is running, we can't set the NODE_ENV so we'll check if it's
@@ -16,8 +18,7 @@ if (process.env.NODE_ENV === 'production') {
 
 const port = process.env.PORT || 1212;
 const publicPath = `http://localhost:${port}/dist`;
-const dllDir = path.join(__dirname, '../dll');
-const manifest = path.resolve(dllDir, 'renderer.json');
+const manifest = path.resolve(webpackPaths.dllPath, 'renderer.json');
 const requiredByDLLConfig = module.parent.filename.includes(
   'webpack.config.renderer.dev.dll'
 );
@@ -25,7 +26,7 @@ const requiredByDLLConfig = module.parent.filename.includes(
 /**
  * Warn if the DLL is not built
  */
-if (!requiredByDLLConfig && !(fs.existsSync(dllDir) && fs.existsSync(manifest))) {
+if (!requiredByDLLConfig && !(fs.existsSync(webpackPaths.dllPath) && fs.existsSync(manifest))) {
   console.log(
     chalk.black.bgYellow.bold(
       'The DLL files are missing. Sit back while we build them for you with "yarn build-dll"'
@@ -42,6 +43,8 @@ export default merge(baseConfig, {
   target: 'electron-renderer',
 
   entry: [
+    `webpack-dev-server/client?http://localhost:${port}/dist`,
+    'webpack/hot/only-dev-server',
     'core-js',
     'regenerator-runtime/runtime',
     require.resolve('../../src/App.tsx'),
@@ -215,7 +218,7 @@ export default merge(baseConfig, {
     requiredByDLLConfig
       ? null
       : new webpack.DllReferencePlugin({
-          context: path.join(__dirname, '../dll'),
+          context: webpackPaths.dllPath,
           manifest: require(manifest),
           sourceType: 'var',
         }),
@@ -243,6 +246,25 @@ export default merge(baseConfig, {
     }),
 
     new ReactRefreshWebpackPlugin(),
+
+    new HtmlWebpackPlugin({
+      filename: 'index_injected.html',
+      template: path.join(webpackPaths.srcPath, 'index.html'),
+      minify: {
+        collapseWhitespace: true,
+        removeAttributeQuotes: true,
+        removeComments: true,
+      },
+      isBrowser: false,
+      env: process.env.NODE_ENV,
+      isDevelopment: process.env.NODE_ENV !== 'production',
+      meta: {
+        'Content-Security-Policy': {
+          'http-equiv': 'Content-Security-Policy',
+          'content': getCSP(),
+        },
+      }
+    }),
   ],
 
   node: {
@@ -252,25 +274,41 @@ export default merge(baseConfig, {
 
   devServer: {
     port,
-    publicPath,
     compress: true,
-    noInfo: false,
-    stats: 'errors-only',
-    inline: true,
-    lazy: false,
+    devMiddleware: {
+      publicPath,
+      stats: 'errors-only',
+    },
+    // replace with experiments.lazyCompilation
+    // REMOVED: lazy: false,
     hot: true,
     headers: { 'Access-Control-Allow-Origin': '*' },
-    contentBase: path.join(__dirname, 'dist'),
-    watchOptions: {
-      aggregateTimeout: 300,
-      ignored: /node_modules/,
-      poll: 100,
-    },
     historyApiFallback: {
       verbose: true,
       disableDotRule: false,
     },
-    before() {
+    static: [
+      {
+        directory: path.join(__dirname, 'dist'),
+        watch: {
+          aggregateTimeout: 300,
+          ignored: /node_modules/,
+          poll: 100,
+        },
+      },
+      {
+        publicPath: '/assets',
+        directory: path.join(webpackPaths.rootPath, 'assets'),
+        // needs to be false otherwise downloading files to assets will
+        // trigger a reload in dev env
+        watch: false,
+      },
+      {
+        publicPath: '/dll',
+        directory: webpackPaths.dllPath,
+      },
+    ],
+    onBeforeSetupMiddleware () {
       console.log('Starting Main Process...');
         spawn('npm', ['run', 'start:main'], {
           shell: true,

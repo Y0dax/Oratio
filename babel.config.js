@@ -21,7 +21,19 @@ module.exports = (api) => {
   return {
     presets: [
       // @babel/preset-env will automatically target our browserslist targets
-      require('@babel/preset-env'),
+      [
+        require('@babel/preset-env'),
+        {
+          useBuiltIns: 'usage',
+          // caller.target will be the same as the target option from webpack
+          targets: api.caller((caller) => caller && caller.target === 'node')
+            ? { node: '12.18' }
+            : // this fixes import/export only allowed for modules error for the client bundle
+              // chrome 87 is both the version thats used in electron11 as well as OBS27
+              { chrome: '87' },
+          corejs: '3.10.1',
+        },
+      ],
       require('@babel/preset-typescript'),
       [require('@babel/preset-react'), { development }],
     ],
@@ -54,7 +66,10 @@ module.exports = (api) => {
       require('@babel/plugin-syntax-dynamic-import'),
       require('@babel/plugin-syntax-import-meta'),
       [require('@babel/plugin-proposal-class-properties'), { loose: true }],
-      require('@babel/plugin-proposal-json-strings'),
+      [
+        require('@babel/plugin-proposal-private-property-in-object'),
+        { loose: true },
+      ],
 
       ...(development ? developmentPlugins : productionPlugins),
     ],
